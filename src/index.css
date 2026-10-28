@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap');
+@import "tailwindcss";
+
+@layer base {
+  :root { color-scheme: dark; }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background-color: #0a0b0f;
+    color: #f1f5f9;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-image:
+      radial-gradient(ellipse at 20% 15%, rgba(92, 124, 250, 0.07) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 85%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+    min-height: 100vh;
+  }
+
+  /* Date input calendar icon tint */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.6) sepia(1) saturate(2) hue-rotate(190deg);
+    cursor: pointer;
+    opacity: 0.7;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: #0f1117; }
+  ::-webkit-scrollbar-thumb { background: #2a2d4a; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #4c6ef5; }
+
+  /* Select option bg on dark */
+  select option { background: #0f1117; color: #f1f5f9; }
+}

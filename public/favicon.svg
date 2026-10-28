@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="8" fill="#0f1117"/>
+  <rect x="1" y="1" width="30" height="30" rx="7.5" fill="none" stroke="#4c6ef5" stroke-width="1.5" stroke-opacity="0.6"/>
+  <!-- Crown icon -->
+  <path d="M6 22 L6 12 L10 16 L16 8 L22 16 L26 12 L26 22 Z" fill="#5c7cfa" opacity="0.9"/>
+  <rect x="5" y="22" width="22" height="3" rx="1.5" fill="#748ffc"/>
+</svg>
