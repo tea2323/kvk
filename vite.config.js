@@ -12,9 +12,9 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'supabase': ['@supabase/supabase-js'],
-          'router':   ['react-router-dom'],
+        manualChunks(id) {
+          if (id.includes('@supabase'))       return 'supabase'
+          if (id.includes('react-router'))    return 'router'
         },
       },
     },
