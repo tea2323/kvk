@@ -4,7 +4,7 @@ import {
   RefreshCw, Download, Search, AlertTriangle, ArrowLeft,
   Crown, ChevronUp, ChevronDown, Loader2, XCircle, Calendar,
   TrendingUp, Users, Pencil, Trash2, Lock, KeyRound,
-  LogOut, Save, X, Check, ShieldAlert,
+  LogOut, Save, X, Check, ShieldAlert, UserPlus, CheckCircle2,
 } from 'lucide-react'
 import { supabase } from './lib/supabase.js'
 import { calculateRoiScore } from './lib/roi.js'
@@ -44,9 +44,7 @@ const TIME_SLOTS = (() => {
   return slots
 })()
 
-// ─── Display helpers ─────────────────────────────────────────────────────────
-const TC_WEIGHTS = { '25':1,'26':2,'27':3,'28':4,'29':5,'30':6,'TG1':8,'TG2':11,'TG3':14 }
-
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmtSpd  = (d, h) => (!d && !h) ? '—' : (d && h) ? `${d}d ${h}h` : d ? `${d}d` : `${h}h`
 const fmtGold = (n)    => !n ? '—' : n >= 1_000_000 ? `${(n/1_000_000).toFixed(1)}M` : n >= 1_000 ? `${Math.round(n/1_000)}K` : String(n)
 const fmtDate = (s)    => new Date(s).toLocaleDateString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })
@@ -76,6 +74,23 @@ const enrichRoi = (r) => ({
   }),
 })
 
+// Build a safe DB payload with strict type coercion — shared by Add + Edit
+const buildPayload = (f) => ({
+  player_name:        String(f.playerName).trim(),
+  alliance:           String(f.alliance),
+  selected_days:      Array.isArray(f.selectedDays) ? f.selectedDays : [],
+  tc_level:           String(f.tcLevel),
+  construction_days:  parseInt(f.constructionDays,  10) || 0,
+  construction_hours: parseInt(f.constructionHours, 10) || 0,
+  research_days:      parseInt(f.researchDays,      10) || 0,
+  research_hours:     parseInt(f.researchHours,     10) || 0,
+  training_days:      parseInt(f.trainingDays,      10) || 0,
+  training_hours:     parseInt(f.trainingHours,     10) || 0,
+  true_gold_count:    parseInt(f.trueGold,          10) || 0,
+  time_slot_day1:     f.timeSlotDay1 ? String(f.timeSlotDay1) : null,
+  time_slot_day4:     f.timeSlotDay4 ? String(f.timeSlotDay4) : null,
+})
+
 // ─── Conflict detection ───────────────────────────────────────────────────────
 const buildConflictMap = (rows) => {
   const d1 = {}, d4 = {}
@@ -96,8 +111,8 @@ const exportCsv = (rows, conflictMap) => {
   const hdrs = ['Rank','Player','Alliance','TC Level','Selected Days','Day 1 Slot','Day 4 Slot',
                 'Construction','Research','Training','True Gold','ROI Score','Conflict','Submitted At']
   const body = rows.map((r, i) => [
-    i + 1, r.player_name, r.alliance, r.tc_level,
-    (r.selected_days || []).join(' + '),
+    i+1, r.player_name, r.alliance, r.tc_level,
+    (r.selected_days||[]).join(' + '),
     fmtSlot(r.time_slot_day1), fmtSlot(r.time_slot_day4),
     fmtSpd(r.construction_days, r.construction_hours),
     fmtSpd(r.research_days, r.research_hours),
@@ -106,14 +121,12 @@ const exportCsv = (rows, conflictMap) => {
     conflictMap.has(r.id) ? [...conflictMap.get(r.id)].join('+') : '',
     fmtDate(r.created_at),
   ])
-  const csv = [hdrs, ...body].map(row =>
-    row.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')
+  const csv = [hdrs,...body].map(row =>
+    row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')
   ).join('\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'})
   const url  = URL.createObjectURL(blob)
-  const a    = Object.assign(document.createElement('a'), {
-    href: url, download: `kvk-appointments-${new Date().toISOString().slice(0,10)}.csv`,
-  })
+  const a    = Object.assign(document.createElement('a'),{href:url,download:`kvk-appointments-${new Date().toISOString().slice(0,10)}.csv`})
   a.click(); URL.revokeObjectURL(url)
 }
 
@@ -121,8 +134,8 @@ const exportCsv = (rows, conflictMap) => {
 function StatCard({ icon, label, value, accent }) {
   return (
     <div className="flex flex-col gap-1 px-4 py-3 rounded-xl"
-      style={{ background:'#0f1117', border:`1px solid ${accent ?? '#1c1f2e'}`, flex:'1 1 110px' }}>
-      <div className="flex items-center gap-1.5" style={{ color: accent ?? '#6b7280' }}>
+      style={{ background:'#0f1117', border:`1px solid ${accent??'#1c1f2e'}`, flex:'1 1 110px' }}>
+      <div className="flex items-center gap-1.5" style={{ color:accent??'#6b7280' }}>
         {icon}
         <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em' }}>{label}</span>
       </div>
@@ -146,43 +159,74 @@ function TcBadge({ level }) {
   return (
     <span className="inline-block font-bold text-xs px-2 py-0.5 rounded-lg"
       style={gold
-        ? { color:'#fcd34d', background:'rgba(245,158,11,0.14)', border:'1px solid rgba(245,158,11,0.3)' }
-        : { color:'#748ffc', background:'rgba(76,110,245,0.14)', border:'1px solid rgba(76,110,245,0.3)' }}>
+        ?{color:'#fcd34d',background:'rgba(245,158,11,0.14)',border:'1px solid rgba(245,158,11,0.3)'}
+        :{color:'#748ffc',background:'rgba(76,110,245,0.14)',border:'1px solid rgba(76,110,245,0.3)'}}>
       {level}
     </span>
   )
 }
 
 function RoiPill({ score }) {
-  const s = roiStyle(score ?? 0)
+  const s = roiStyle(score??0)
   return (
     <span className="inline-block font-bold text-sm px-2.5 py-0.5 rounded-lg tabular-nums"
       style={{ color:s.color, background:s.bg, border:`1px solid ${s.border}` }}>
-      {(score ?? 0).toLocaleString()}
+      {(score??0).toLocaleString()}
     </span>
   )
 }
 
 function ConflictPill({ conflicts }) {
-  if (!conflicts || conflicts.size === 0) return <span style={{ color:'#374151' }}>—</span>
+  if (!conflicts||conflicts.size===0) return <span style={{ color:'#374151' }}>—</span>
   return (
     <span className="inline-flex items-center gap-1 font-bold text-xs px-2 py-0.5 rounded-lg"
       style={{ color:'#fcd34d', background:'rgba(245,158,11,0.18)', border:'1px solid rgba(245,158,11,0.4)' }}>
       <AlertTriangle className="w-3 h-3" />
-      {[...conflicts].map(d => d === 'day1' ? 'D1' : 'D4').join('+')}
+      {[...conflicts].map(d=>d==='day1'?'D1':'D4').join('+')}
     </span>
   )
 }
 
 function SortIcon({ col, sort }) {
-  if (sort.col !== col) return <ChevronDown className="w-3 h-3 inline ml-1" style={{ color:'#2d3748' }} />
-  return sort.dir === 'desc'
+  if (sort.col!==col) return <ChevronDown className="w-3 h-3 inline ml-1" style={{ color:'#2d3748' }} />
+  return sort.dir==='desc'
     ? <ChevronDown className="w-3 h-3 inline ml-1" style={{ color:'#748ffc' }} />
     : <ChevronUp   className="w-3 h-3 inline ml-1" style={{ color:'#748ffc' }} />
 }
 
-// ─── Overlay backdrop ─────────────────────────────────────────────────────────
-function Backdrop({ children, zIndex = 50 }) {
+// ─── Admin Toast ──────────────────────────────────────────────────────────────
+function AdminToast({ toast, onClose }) {
+  useEffect(() => {
+    if (!toast) return
+    const id = setTimeout(onClose, 3200)
+    return () => clearTimeout(id)
+  }, [toast, onClose])
+
+  if (!toast) return null
+  const ok = toast.type === 'success'
+  return (
+    <div className="fixed bottom-6 right-6 z-[80]"
+      style={{ animation:'toastSlide 0.35s cubic-bezier(0.34,1.56,0.64,1)' }}>
+      <div className="flex items-center gap-3 pl-4 pr-3 py-3 rounded-2xl"
+        style={{ background: ok ? 'rgba(6,78,59,0.97)' : 'rgba(69,10,10,0.97)',
+                 border: `1px solid ${ok?'rgba(16,185,129,0.45)':'rgba(244,63,94,0.45)'}`,
+                 boxShadow:'0 8px 36px rgba(0,0,0,0.55)', backdropFilter:'blur(12px)' }}>
+        {ok
+          ? <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color:'#6ee7b7' }} />
+          : <XCircle      className="w-4 h-4 shrink-0" style={{ color:'#fda4af' }} />}
+        <p className="text-sm font-semibold text-white pr-1">{toast.msg}</p>
+        <button onClick={onClose} className="shrink-0 transition-colors" style={{ color:'#4b5563' }}
+          onMouseOver={e=>e.currentTarget.style.color='#e2e8f0'}
+          onMouseOut={e =>e.currentTarget.style.color='#4b5563'}>
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Backdrop ─────────────────────────────────────────────────────────────────
+function Backdrop({ children, zIndex=50 }) {
   return (
     <div className="fixed inset-0 flex items-center justify-center p-4"
       style={{ background:'rgba(0,0,0,0.8)', backdropFilter:'blur(10px)',
@@ -192,26 +236,21 @@ function Backdrop({ children, zIndex = 50 }) {
   )
 }
 
-// ─── Login Modal ─────────────────────────────────────────────────────────────
+// ─── Login Modal ──────────────────────────────────────────────────────────────
 function LoginModal({ onSuccess }) {
-  const navigate   = useNavigate()
-  const [pw,  setPw]      = useState('')
-  const [err, setErr]     = useState('')
+  const navigate = useNavigate()
+  const [pw,    setPw]    = useState('')
+  const [err,   setErr]   = useState('')
   const [shake, setShake] = useState(false)
   const ADMIN_PW = import.meta.env.VITE_ADMIN_PASSWORD
 
   const attempt = (e) => {
     e.preventDefault()
-    if (!ADMIN_PW) {
-      console.warn('[Admin] VITE_ADMIN_PASSWORD not set — granting access.')
-      onSuccess(); return
-    }
-    if (pw === ADMIN_PW) {
-      onSuccess()
-    } else {
+    if (!ADMIN_PW) { console.warn('[Admin] No VITE_ADMIN_PASSWORD — access granted.'); onSuccess(); return }
+    if (pw === ADMIN_PW) { onSuccess() }
+    else {
       setErr('Incorrect passcode. Try again.')
-      setPw('')
-      setShake(true)
+      setPw(''); setShake(true)
       setTimeout(() => setShake(false), 450)
     }
   }
@@ -220,7 +259,6 @@ function LoginModal({ onSuccess }) {
     <div className="min-h-screen flex items-center justify-center p-5"
       style={{ background:'#0a0b0f', animation:'fadeIn 0.2s ease-out' }}>
       <div className="w-full" style={{ maxWidth:360 }}>
-        {/* Logo */}
         <div className="flex flex-col items-center gap-3 mb-8">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
             style={{ background:'rgba(76,110,245,0.15)', border:'1px solid rgba(76,110,245,0.35)',
@@ -232,31 +270,19 @@ function LoginModal({ onSuccess }) {
             <p style={{ fontSize:13, color:'#6b7280', marginTop:2 }}>2323 KvK · R4 Access Only</p>
           </div>
         </div>
-
-        {/* Card */}
-        <form onSubmit={attempt}
-          className="rounded-2xl p-6 space-y-4"
-          style={{ background:'#0f1117', border:'1px solid #1c1f2e',
-                   boxShadow:'0 24px 64px rgba(0,0,0,0.6)',
-                   animation: shake ? 'shake 0.4s ease-out' : 'slideUp 0.3s ease-out' }}>
+        <form onSubmit={attempt} className="rounded-2xl p-6 space-y-4"
+          style={{ background:'#0f1117', border:'1px solid #1c1f2e', boxShadow:'0 24px 64px rgba(0,0,0,0.6)',
+                   animation:shake?'shake 0.4s ease-out':'slideUp 0.3s ease-out' }}>
           <div className="space-y-1.5">
-            <label style={{ fontSize:11, fontWeight:700, color:'#6b7280',
-                            textTransform:'uppercase', letterSpacing:'0.07em' }}>
+            <label style={{ fontSize:11, fontWeight:700, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.07em' }}>
               R4 Passcode
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                style={{ color:'#374151' }} />
-              <input
-                type="password"
-                value={pw}
-                onChange={e => { setPw(e.target.value); setErr('') }}
-                placeholder="Enter passcode…"
-                autoFocus
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color:'#374151' }} />
+              <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr('')}}
+                placeholder="Enter passcode…" autoFocus
                 className="w-full pl-10 pr-4 py-3 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1"
-                style={{ background:'#0a0b0f', border:`1px solid ${err ? '#f43f5e66' : '#1c1f2e'}`,
-                         fontSize:16, '--tw-ring-color':'rgba(92,124,250,0.3)' }}
-              />
+                style={{ background:'#0a0b0f', border:`1px solid ${err?'#f43f5e66':'#1c1f2e'}`, fontSize:16, '--tw-ring-color':'rgba(92,124,250,0.3)' }} />
             </div>
             {err && (
               <p className="flex items-center gap-1.5 text-xs" style={{ color:'#f43f5e', animation:'fadeIn 0.15s' }}>
@@ -264,26 +290,21 @@ function LoginModal({ onSuccess }) {
               </p>
             )}
           </div>
-
           <button type="submit"
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white transition-all active:scale-95"
-            style={{ background:'linear-gradient(135deg,#4c6ef5,#5c7cfa)',
-                     boxShadow:'0 0 24px rgba(92,124,250,0.35)', fontSize:14 }}>
-            <KeyRound className="w-4 h-4" />
-            Enter Admin Dashboard
+            style={{ background:'linear-gradient(135deg,#4c6ef5,#5c7cfa)', boxShadow:'0 0 24px rgba(92,124,250,0.35)', fontSize:14 }}>
+            <KeyRound className="w-4 h-4" />Enter Admin Dashboard
           </button>
-
           <button type="button" onClick={() => navigate('/')}
             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm transition-all"
             style={{ color:'#4b5563', background:'transparent', border:'1px solid #1c1f2e' }}
-            onMouseOver={e => e.currentTarget.style.color='#9ca3af'}
-            onMouseOut={e  => e.currentTarget.style.color='#4b5563'}>
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back to Booking Form
+            onMouseOver={e=>e.currentTarget.style.color='#9ca3af'}
+            onMouseOut={e =>e.currentTarget.style.color='#4b5563'}>
+            <ArrowLeft className="w-3.5 h-3.5" />Back to Booking Form
           </button>
         </form>
         <p className="text-center mt-4" style={{ fontSize:10, color:'#2d3748' }}>
-          Session-scoped · Password set via VITE_ADMIN_PASSWORD
+          Session-scoped · VITE_ADMIN_PASSWORD
         </p>
       </div>
     </div>
@@ -310,18 +331,17 @@ function DeleteModal({ row, loading, onConfirm, onCancel }) {
           </div>
         </div>
         <p style={{ fontSize:12, color:'#6b7280', lineHeight:1.5 }}>
-          This will permanently remove this appointment from the database. This action cannot be undone.
+          This will permanently remove this appointment. This action cannot be undone.
         </p>
         <div className="flex gap-2.5">
           <button onClick={onCancel} disabled={loading}
-            className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold"
             style={{ background:'#1c1f2e', color:'#9ca3af', border:'1px solid #2a2d3a' }}>
             Cancel
           </button>
           <button onClick={onConfirm} disabled={loading}
             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 disabled:opacity-60"
-            style={{ background:'rgba(244,63,94,0.2)', border:'1px solid rgba(244,63,94,0.4)',
-                     color:'#fda4af', boxShadow: loading ? 'none' : '0 0 16px rgba(244,63,94,0.2)' }}>
+            style={{ background:'rgba(244,63,94,0.2)', border:'1px solid rgba(244,63,94,0.4)', color:'#fda4af' }}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
             {loading ? 'Deleting…' : 'Delete'}
           </button>
@@ -331,27 +351,30 @@ function DeleteModal({ row, loading, onConfirm, onCancel }) {
   )
 }
 
-// ─── Edit Modal ───────────────────────────────────────────────────────────────
-function EditModal({ row, onSave, onClose, saving }) {
+// ─── Booking Modal (shared by Add & Edit) ────────────────────────────────────
+// mode='add'  → empty form, emerald accent, "Add to Dashboard" button
+// mode='edit' → pre-filled form, indigo accent, "Save Changes" button
+function BookingModal({ mode = 'edit', row = null, onSave, onClose, saving }) {
+  const isAdd = mode === 'add'
+
   const [f, setF] = useState(() => ({
-    playerName:        row.player_name,
-    alliance:          row.alliance,
-    selectedDays:      row.selected_days   ?? [],
-    tcLevel:           row.tc_level        ?? '',
-    constructionDays:  row.construction_days  ?? 0,
-    constructionHours: row.construction_hours ?? 0,
-    researchDays:      row.research_days      ?? 0,
-    researchHours:     row.research_hours     ?? 0,
-    trainingDays:      row.training_days      ?? 0,
-    trainingHours:     row.training_hours     ?? 0,
-    trueGold:          row.true_gold_count    ?? '',
-    timeSlotDay1:      row.time_slot_day1     ?? '',
-    timeSlotDay4:      row.time_slot_day4     ?? '',
+    playerName:        isAdd ? ''  : (row?.player_name        ?? ''),
+    alliance:          isAdd ? ''  : (row?.alliance            ?? ''),
+    selectedDays:      isAdd ? []  : (row?.selected_days       ?? []),
+    tcLevel:           isAdd ? ''  : (row?.tc_level            ?? ''),
+    constructionDays:  isAdd ? 0   : (row?.construction_days   ?? 0),
+    constructionHours: isAdd ? 0   : (row?.construction_hours  ?? 0),
+    researchDays:      isAdd ? 0   : (row?.research_days       ?? 0),
+    researchHours:     isAdd ? 0   : (row?.research_hours      ?? 0),
+    trainingDays:      isAdd ? 0   : (row?.training_days       ?? 0),
+    trainingHours:     isAdd ? 0   : (row?.training_hours      ?? 0),
+    trueGold:          isAdd ? ''  : (row?.true_gold_count      ?? ''),
+    timeSlotDay1:      isAdd ? ''  : (row?.time_slot_day1      ?? ''),
+    timeSlotDay4:      isAdd ? ''  : (row?.time_slot_day4      ?? ''),
   }))
 
-  const set  = (k)  => (v) => setF(p => ({ ...p, [k]: v }))
-  const setE = (k)  => (e) => setF(p => ({ ...p, [k]: e.target.value }))
-
+  const set  = (k) => (v) => setF(p => ({ ...p, [k]: v }))
+  const setE = (k) => (e) => setF(p => ({ ...p, [k]: e.target.value }))
   const toggleDay = (id) =>
     setF(p => ({
       ...p,
@@ -360,49 +383,64 @@ function EditModal({ row, onSave, onClose, saving }) {
         : [...p.selectedDays, id],
     }))
 
-  // label styles
+  // Accent colours: emerald for Add, indigo for Edit
+  const accent     = isAdd ? '#10b981' : '#4c6ef5'
+  const accentText = isAdd ? '#6ee7b7' : '#748ffc'
+  const accentBg   = isAdd ? 'rgba(16,185,129,0.15)' : 'rgba(76,110,245,0.15)'
+  const accentGlow = isAdd ? 'rgba(16,185,129,0.4)'  : 'rgba(92,124,250,0.4)'
+  const btnGrad    = isAdd
+    ? 'linear-gradient(135deg,#059669,#10b981)'
+    : 'linear-gradient(135deg,#4c6ef5,#5c7cfa)'
+
   const lbl = { fontSize:10, fontWeight:700, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.07em' }
-  const inp  = { background:'#0a0b0f', border:'1px solid #1c1f2e', color:'#e2e8f0',
-                 borderRadius:10, padding:'8px 12px', fontSize:14, outline:'none', width:'100%' }
-  const numInp = { ...inp, width:'100%', textAlign:'center', appearance:'textfield' }
+  const inp = { background:'#0a0b0f', border:'1px solid #1c1f2e', color:'#e2e8f0',
+                borderRadius:10, padding:'8px 12px', fontSize:14, outline:'none', width:'100%' }
 
   return (
     <Backdrop zIndex={60}>
-      {/* Scrollable inner card */}
       <div className="w-full flex flex-col rounded-2xl overflow-hidden"
         style={{ maxWidth:520, maxHeight:'92vh', background:'#0f1117',
-                 border:'1px solid rgba(76,110,245,0.25)',
+                 border:`1px solid ${accent}40`,
                  boxShadow:'0 24px 64px rgba(0,0,0,0.7)', animation:'slideUp 0.28s ease-out' }}>
+
+        {/* Accent bar */}
+        <div className="h-0.5 w-full shrink-0"
+          style={{ background:`linear-gradient(90deg,${accent},${accentText},transparent)` }} />
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 shrink-0"
           style={{ borderBottom:'1px solid #1c1f2e', background:'rgba(18,20,28,0.7)' }}>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background:'rgba(76,110,245,0.15)', border:'1px solid rgba(76,110,245,0.3)' }}>
-              <Pencil className="w-4 h-4" style={{ color:'#748ffc' }} />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+              style={{ background:accentBg, border:`1px solid ${accent}50` }}>
+              {isAdd
+                ? <UserPlus className="w-4 h-4" style={{ color:accentText }} />
+                : <Pencil   className="w-4 h-4" style={{ color:accentText }} />}
             </div>
             <div>
-              <h2 className="font-bold text-white text-sm">Edit Booking</h2>
-              <p style={{ fontSize:11, color:'#4b5563' }}>{row.player_name} · {row.alliance}</p>
+              <h2 className="font-bold text-white text-sm">{isAdd ? 'Add Player' : 'Edit Booking'}</h2>
+              <p style={{ fontSize:11, color:'#4b5563' }}>
+                {isAdd ? 'Manual entry · no Discord notification' : `${row?.player_name} · ${row?.alliance}`}
+              </p>
             </div>
           </div>
           <button onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
             style={{ color:'#4b5563', background:'#12141c' }}
-            onMouseOver={e => e.currentTarget.style.color='#e2e8f0'}
-            onMouseOut={e  => e.currentTarget.style.color='#4b5563'}>
+            onMouseOver={e=>e.currentTarget.style.color='#e2e8f0'}
+            onMouseOut={e =>e.currentTarget.style.color='#4b5563'}>
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Scrollable body */}
+        {/* Scrollable form body */}
         <div className="overflow-y-auto p-5 space-y-5 flex-1">
 
           {/* Player Name */}
           <div className="space-y-1.5">
             <p style={lbl}>Player Name</p>
-            <input type="text" value={f.playerName} onChange={setE('playerName')} style={inp} placeholder="In-game name…" />
+            <input type="text" value={f.playerName} onChange={setE('playerName')}
+              placeholder="In-game name…" style={inp} />
           </div>
 
           {/* Alliance */}
@@ -410,14 +448,13 @@ function EditModal({ row, onSave, onClose, saving }) {
             <p style={lbl}>Alliance</p>
             <div className="grid grid-cols-4 gap-2">
               {ALLIANCES.map(a => {
-                const s = ALLIANCE_CLR[a]
-                const sel = f.alliance === a
+                const s = ALLIANCE_CLR[a]; const sel = f.alliance === a
                 return (
                   <button key={a} type="button" onClick={() => set('alliance')(a)}
                     className="py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all active:scale-95"
                     style={sel
-                      ? { border:`1.5px solid ${s.border}`, background:s.bg, color:s.text, boxShadow:`0 0 10px ${s.border}44` }
-                      : { border:'1.5px solid #1c1f2e', background:'#0a0b0f', color:'#4b5563' }}>
+                      ?{border:`1.5px solid ${s.border}`,background:s.bg,color:s.text,boxShadow:`0 0 10px ${s.border}44`}
+                      :{border:'1.5px solid #1c1f2e',background:'#0a0b0f',color:'#4b5563'}}>
                     {a}
                   </button>
                 )
@@ -435,18 +472,16 @@ function EditModal({ row, onSave, onClose, saving }) {
                   <button key={d.id} type="button" onClick={() => toggleDay(d.id)}
                     className="relative flex items-center gap-2.5 px-3 py-3 rounded-xl transition-all active:scale-97"
                     style={sel
-                      ? { border:`1.5px solid ${d.border}`, background:d.bg, boxShadow:d.glow }
-                      : { border:'1.5px solid #1c1f2e', background:'#0a0b0f' }}>
-                    {/* checkbox pip */}
+                      ?{border:`1.5px solid ${d.border}`,background:d.bg,boxShadow:d.glow}
+                      :{border:'1.5px solid #1c1f2e',background:'#0a0b0f'}}>
                     <span className="flex items-center justify-center rounded-full shrink-0"
-                      style={{ width:16, height:16, background:sel?d.border:'transparent',
-                               border:sel?'none':'1.5px solid #2a2d4a' }}>
+                      style={{ width:16, height:16, background:sel?d.border:'transparent', border:sel?'none':'1.5px solid #2a2d4a' }}>
                       {sel && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
                     </span>
                     <span style={{ fontSize:15 }}>{d.emoji}</span>
                     <div className="text-left">
-                      <p className="text-xs font-bold leading-tight" style={{ color: sel ? d.text : '#6b7280' }}>{d.label}</p>
-                      <p className="text-xs leading-tight" style={{ color: sel ? d.text : '#374151', opacity:0.9, fontSize:10 }}>{d.sub}</p>
+                      <p className="text-xs font-bold leading-tight" style={{ color:sel?d.text:'#6b7280' }}>{d.label}</p>
+                      <p style={{ fontSize:10, color:sel?d.text:'#374151', lineHeight:1.3 }}>{d.sub}</p>
                     </div>
                   </button>
                 )
@@ -459,18 +494,17 @@ function EditModal({ row, onSave, onClose, saving }) {
             <p style={lbl}>TC Level</p>
             <div className="grid grid-cols-3 gap-1.5">
               {TC_LEVELS.map(lvl => {
-                const gold = TC_IS_GOLD(lvl)
-                const sel  = f.tcLevel === lvl
+                const gold = TC_IS_GOLD(lvl); const sel = f.tcLevel === lvl
                 const aC   = gold ? '#f59e0b' : '#4c6ef5'
                 return (
                   <button key={lvl} type="button" onClick={() => set('tcLevel')(lvl)}
                     className="py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95"
                     style={sel
-                      ? { border:`1.5px solid ${aC}`, background:gold?'rgba(245,158,11,0.14)':'rgba(76,110,245,0.14)',
-                          color:gold?'#fcd34d':'#748ffc', boxShadow:`0 0 10px ${aC}55` }
-                      : { border:`1.5px solid ${gold?'rgba(245,158,11,0.22)':'#1c1f2e'}`,
-                          background:gold?'rgba(245,158,11,0.04)':'#0a0b0f',
-                          color:gold?'rgba(245,158,11,0.5)':'#374151' }}>
+                      ?{border:`1.5px solid ${aC}`,background:gold?'rgba(245,158,11,0.14)':'rgba(76,110,245,0.14)',
+                        color:gold?'#fcd34d':'#748ffc',boxShadow:`0 0 10px ${aC}55`}
+                      :{border:`1.5px solid ${gold?'rgba(245,158,11,0.22)':'#1c1f2e'}`,
+                        background:gold?'rgba(245,158,11,0.04)':'#0a0b0f',
+                        color:gold?'rgba(245,158,11,0.5)':'#374151'}}>
                     {lvl}
                   </button>
                 )
@@ -481,27 +515,22 @@ function EditModal({ row, onSave, onClose, saving }) {
           {/* Speedups */}
           <div className="space-y-3">
             <p style={lbl}>Speedups (Days / Hours)</p>
-            {[
-              ['🔨','Construction','constructionDays','constructionHours'],
+            {[['🔨','Construction','constructionDays','constructionHours'],
               ['🧪','Research',    'researchDays',    'researchHours'   ],
               ['⚔️','Training',    'trainingDays',    'trainingHours'   ],
-            ].map(([icon, label, dKey, hKey]) => (
+            ].map(([icon,label,dKey,hKey]) => (
               <div key={label} className="flex items-center gap-3">
-                <span style={{ width:24, textAlign:'center', fontSize:14, flexShrink:0 }}>{icon}</span>
-                <span style={{ fontSize:12, fontWeight:600, color:'#6b7280', width:80, flexShrink:0 }}>{label}</span>
+                <span style={{ width:22, textAlign:'center', fontSize:14, flexShrink:0 }}>{icon}</span>
+                <span style={{ fontSize:12, fontWeight:600, color:'#6b7280', width:82, flexShrink:0 }}>{label}</span>
                 <div className="flex gap-2 flex-1">
-                  <div className="flex-1">
-                    <input type="number" min="0" max="999" value={f[dKey]}
-                      onChange={e => set(dKey)(parseInt(e.target.value,10)||0)}
-                      style={numInp} placeholder="0" />
-                    <p style={{ fontSize:9, color:'#374151', textAlign:'center', marginTop:2, fontWeight:700, textTransform:'uppercase' }}>Days</p>
-                  </div>
-                  <div className="flex-1">
-                    <input type="number" min="0" max="23" value={f[hKey]}
-                      onChange={e => set(hKey)(parseInt(e.target.value,10)||0)}
-                      style={numInp} placeholder="0" />
-                    <p style={{ fontSize:9, color:'#374151', textAlign:'center', marginTop:2, fontWeight:700, textTransform:'uppercase' }}>Hours</p>
-                  </div>
+                  {[['Days', dKey, 999], ['Hours', hKey, 23]].map(([unit, key, max]) => (
+                    <div key={key} className="flex-1">
+                      <input type="number" min="0" max={max} value={f[key]}
+                        onChange={e => set(key)(parseInt(e.target.value,10)||0)}
+                        style={{ ...inp, textAlign:'center', appearance:'textfield' }} />
+                      <p style={{ fontSize:9, color:'#374151', textAlign:'center', marginTop:2, fontWeight:700, textTransform:'uppercase' }}>{unit}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
@@ -511,18 +540,20 @@ function EditModal({ row, onSave, onClose, saving }) {
           <div className="space-y-1.5">
             <p style={lbl}>True Gold Count</p>
             <input type="number" min="0" value={f.trueGold}
-              onChange={setE('trueGold')} style={inp} placeholder="e.g. 250000" />
+              onChange={setE('trueGold')} placeholder="e.g. 250000" style={inp} />
           </div>
 
-          {/* Time Slots (only for selected days) */}
+          {/* Time Slots */}
           {(f.selectedDays.includes('day1') || f.selectedDays.includes('day4')) && (
             <div className="space-y-3">
               <p style={lbl}>Time Slots (UTC)</p>
-              {f.selectedDays.includes('day1') && (
-                <div className="space-y-1">
-                  <p style={{ fontSize:11, color:'#748ffc', fontWeight:700 }}>⚒️ Day 1 Slot</p>
+              {[['day1','⚒️ Day 1 Slot','#748ffc','timeSlotDay1'],
+                ['day4','⚔️ Day 4 Slot','#fcd34d','timeSlotDay4']
+              ].filter(([id]) => f.selectedDays.includes(id)).map(([,label,color,key]) => (
+                <div key={key} className="space-y-1">
+                  <p style={{ fontSize:11, color, fontWeight:700 }}>{label}</p>
                   <div className="relative">
-                    <select value={f.timeSlotDay1} onChange={setE('timeSlotDay1')} dir="ltr"
+                    <select value={f[key]} onChange={setE(key)} dir="ltr"
                       style={{ ...inp, paddingRight:36, appearance:'none', cursor:'pointer' }}>
                       <option value="">Select a slot…</option>
                       {TIME_SLOTS.map(s => <option key={s.value} value={s.value} style={{ background:'#0f1117' }}>{s.label}</option>)}
@@ -530,26 +561,14 @@ function EditModal({ row, onSave, onClose, saving }) {
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color:'#4b5563' }} />
                   </div>
                 </div>
-              )}
-              {f.selectedDays.includes('day4') && (
-                <div className="space-y-1">
-                  <p style={{ fontSize:11, color:'#fcd34d', fontWeight:700 }}>⚔️ Day 4 Slot</p>
-                  <div className="relative">
-                    <select value={f.timeSlotDay4} onChange={setE('timeSlotDay4')} dir="ltr"
-                      style={{ ...inp, paddingRight:36, appearance:'none', cursor:'pointer' }}>
-                      <option value="">Select a slot…</option>
-                      {TIME_SLOTS.map(s => <option key={s.value} value={s.value} style={{ background:'#0f1117' }}>{s.label}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color:'#4b5563' }} />
-                  </div>
-                </div>
-              )}
+              ))}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex gap-2.5 px-5 py-4 shrink-0" style={{ borderTop:'1px solid #1c1f2e', background:'rgba(10,11,15,0.5)' }}>
+        <div className="flex gap-2.5 px-5 py-4 shrink-0"
+          style={{ borderTop:'1px solid #1c1f2e', background:'rgba(10,11,15,0.5)' }}>
           <button onClick={onClose} disabled={saving}
             className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all"
             style={{ background:'#1c1f2e', color:'#9ca3af', border:'1px solid #2a2d3a' }}>
@@ -557,10 +576,12 @@ function EditModal({ row, onSave, onClose, saving }) {
           </button>
           <button onClick={() => onSave(f)} disabled={saving}
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white transition-all active:scale-[0.98] disabled:opacity-60"
-            style={{ background: saving ? '#1c1f2e' : 'linear-gradient(135deg,#4c6ef5,#5c7cfa)',
-                     boxShadow: saving ? 'none' : '0 0 24px rgba(92,124,250,0.35)', fontSize:14 }}>
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {saving ? 'Saving…' : 'Save Changes'}
+            style={{ background:saving?'#1c1f2e':btnGrad,
+                     boxShadow:saving?'none':`0 0 24px ${accentGlow}55`, fontSize:14 }}>
+            {saving
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : isAdd ? <UserPlus className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+            {saving ? (isAdd?'Adding…':'Saving…') : isAdd ? 'Add to Dashboard' : 'Save Changes'}
           </button>
         </div>
       </div>
@@ -573,28 +594,32 @@ export default function Admin() {
   const navigate = useNavigate()
 
   // ── Auth ─────────────────────────────────────────────────────────────────────
-  const [isAuthed, setIsAuthed] = useState(() =>
-    sessionStorage.getItem('kvk_admin_auth') === 'true'
-  )
-  const login  = () => { sessionStorage.setItem('kvk_admin_auth', 'true');  setIsAuthed(true)  }
-  const logout = () => { sessionStorage.removeItem('kvk_admin_auth');        setIsAuthed(false) }
+  const [isAuthed, setIsAuthed] = useState(() => sessionStorage.getItem('kvk_admin_auth') === 'true')
+  const login  = () => { sessionStorage.setItem('kvk_admin_auth','true');  setIsAuthed(true)  }
+  const logout = () => { sessionStorage.removeItem('kvk_admin_auth');       setIsAuthed(false) }
 
   // ── Data ──────────────────────────────────────────────────────────────────────
   const [rows,    setRows]    = useState([])
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
 
-  // ── Filters & Sort ───────────────────────────────────────────────────────────
+  // ── Filters & sort ────────────────────────────────────────────────────────────
   const [allianceFilter, setAlliance] = useState('ALL')
   const [dayFilter,      setDay]      = useState('ALL')
   const [search,         setSearch]   = useState('')
-  const [sort, setSort]               = useState({ col: '_roi', dir: 'desc' })
+  const [sort, setSort]               = useState({ col:'_roi', dir:'desc' })
 
   // ── CRUD modals ───────────────────────────────────────────────────────────────
-  const [editRow,       setEditRow]    = useState(null)   // row being edited, null = closed
+  const [showAdd,       setShowAdd]    = useState(false)
+  const [addSaving,     setAddSaving]  = useState(false)
+  const [editRow,       setEditRow]    = useState(null)
   const [editSaving,    setEditSaving] = useState(false)
-  const [deleteTarget,  setDelTarget]  = useState(null)   // row pending delete
+  const [deleteTarget,  setDelTarget]  = useState(null)
   const [deleteLoading, setDelLoading] = useState(false)
+
+  // ── Toast ─────────────────────────────────────────────────────────────────────
+  const [adminToast, setAdminToast] = useState(null)
+  const showToast = useCallback((type, msg) => setAdminToast({ type, msg }), [])
 
   // ── Fetch ─────────────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -605,50 +630,54 @@ export default function Admin() {
       .order('created_at', { ascending: false })
     if (err) {
       console.error('[Supabase fetch]', err)
-      setError(`${err.message}${err.hint ? ` — ${err.hint}` : ''}`)
+      setError(`${err.message}${err.hint?` — ${err.hint}`:''}`)
       setLoading(false); return
     }
-    setRows((data ?? []).map(enrichRoi))
+    setRows((data??[]).map(enrichRoi))
     setLoading(false)
   }, [])
 
   useEffect(() => { if (isAuthed) fetchData() }, [isAuthed, fetchData])
 
+  // ── Add player (direct DB insert, no Discord) ─────────────────────────────────
+  const handleAddSave = async (f) => {
+    setAddSaving(true)
+    const payload = buildPayload(f)
+    console.log('[Admin Add] Inserting:', payload)
+
+    const { error: err } = await supabase
+      .from('kvk_appointments')
+      .insert([payload])
+
+    if (err) {
+      console.error('[Supabase add]', err)
+      alert(`Add failed: ${err.message}${err.hint?`\nHint: ${err.hint}`:''}`)
+      setAddSaving(false); return
+    }
+
+    setAddSaving(false)
+    setShowAdd(false)
+    showToast('success', `✅ ${f.playerName || 'Player'} added to dashboard`)
+    await fetchData()   // refresh so new row appears with correct ROI
+  }
+
   // ── Edit save ─────────────────────────────────────────────────────────────────
   const handleEditSave = async (f) => {
     setEditSaving(true)
-    const payload = {
-      player_name:        String(f.playerName).trim(),
-      alliance:           String(f.alliance),
-      selected_days:      Array.isArray(f.selectedDays) ? f.selectedDays : [],
-      tc_level:           String(f.tcLevel),
-      construction_days:  parseInt(f.constructionDays,  10) || 0,
-      construction_hours: parseInt(f.constructionHours, 10) || 0,
-      research_days:      parseInt(f.researchDays,      10) || 0,
-      research_hours:     parseInt(f.researchHours,     10) || 0,
-      training_days:      parseInt(f.trainingDays,      10) || 0,
-      training_hours:     parseInt(f.trainingHours,     10) || 0,
-      true_gold_count:    parseInt(f.trueGold,          10) || 0,
-      time_slot_day1:     f.timeSlotDay1 ? String(f.timeSlotDay1) : null,
-      time_slot_day4:     f.timeSlotDay4 ? String(f.timeSlotDay4) : null,
-    }
+    const payload = buildPayload(f)
     const { error: err } = await supabase
       .from('kvk_appointments')
       .update(payload)
       .eq('id', editRow.id)
-
     if (err) {
       console.error('[Supabase update]', err)
-      alert(`Update failed: ${err.message}${err.hint ? `\nHint: ${err.hint}` : ''}`)
+      alert(`Update failed: ${err.message}`)
       setEditSaving(false); return
     }
-
-    // Optimistic update: patch local state
-    setRows(prev => prev.map(r =>
-      r.id === editRow.id ? enrichRoi({ ...r, ...payload }) : r
-    ))
+    setRows(prev => prev.map(r => r.id === editRow.id ? enrichRoi({ ...r, ...payload }) : r))
     setEditSaving(false)
     setEditRow(null)
+    showToast('success', `✅ ${f.playerName} updated`)
   }
 
   // ── Delete confirm ────────────────────────────────────────────────────────────
@@ -659,19 +688,18 @@ export default function Admin() {
       .from('kvk_appointments')
       .delete()
       .eq('id', deleteTarget.id)
-
     if (err) {
       console.error('[Supabase delete]', err)
       alert(`Delete failed: ${err.message}`)
       setDelLoading(false); return
     }
-
+    const name = deleteTarget.player_name
     setRows(prev => prev.filter(r => r.id !== deleteTarget.id))
-    setDelLoading(false)
-    setDelTarget(null)
+    setDelLoading(false); setDelTarget(null)
+    showToast('success', `🗑️ ${name}'s booking deleted`)
   }
 
-  // ── Derived data ──────────────────────────────────────────────────────────────
+  // ── Derived ───────────────────────────────────────────────────────────────────
   const conflictMap = useMemo(() => buildConflictMap(rows), [rows])
 
   const displayed = useMemo(() => {
@@ -683,15 +711,15 @@ export default function Admin() {
       r.selected_days?.includes('day1') && r.selected_days?.includes('day4'))
     if (search.trim()) res = res.filter(r =>
       r.player_name?.toLowerCase().includes(search.toLowerCase()))
-    res.sort((a, b) => {
-      const av = a[sort.col] ?? 0, bv = b[sort.col] ?? 0
-      const cmp = typeof av === 'string' ? av.localeCompare(bv) : av - bv
-      return sort.dir === 'desc' ? -cmp : cmp
+    res.sort((a,b) => {
+      const av=a[sort.col]??0, bv=b[sort.col]??0
+      const cmp = typeof av==='string' ? av.localeCompare(bv) : av-bv
+      return sort.dir==='desc' ? -cmp : cmp
     })
     return res
   }, [rows, allianceFilter, dayFilter, search, sort])
 
-  const toggleSort   = (col) => setSort(s => s.col === col ? { col, dir: s.dir==='desc'?'asc':'desc' } : { col, dir:'desc' })
+  const toggleSort     = (col) => setSort(s => s.col===col?{col,dir:s.dir==='desc'?'asc':'desc'}:{col,dir:'desc'})
   const totalConflicts = rows.filter(r => conflictMap.has(r.id)).length
   const day1Count      = rows.filter(r => r.selected_days?.includes('day1')).length
   const day4Count      = rows.filter(r => r.selected_days?.includes('day4')).length
@@ -699,15 +727,14 @@ export default function Admin() {
 
   const Th = ({ col, children, right }) => (
     <th onClick={() => toggleSort(col)} className="select-none cursor-pointer whitespace-nowrap"
-      style={{ padding:'10px 14px', textAlign:right?'right':'left',
-               fontSize:11, fontWeight:700, color:'#6b7280', textTransform:'uppercase',
-               letterSpacing:'0.07em', background:'#0a0b0f',
+      style={{ padding:'10px 14px', textAlign:right?'right':'left', fontSize:11, fontWeight:700,
+               color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.07em', background:'#0a0b0f',
                borderBottom:'1px solid #1c1f2e', position:'sticky', top:0, zIndex:10 }}>
       {children}<SortIcon col={col} sort={sort} />
     </th>
   )
 
-  // ── Not authenticated: show login ─────────────────────────────────────────────
+  // ── Not authed ────────────────────────────────────────────────────────────────
   if (!isAuthed) return (
     <>
       <style>{`
@@ -720,77 +747,92 @@ export default function Admin() {
     </>
   )
 
-  // ── Authenticated: show dashboard ─────────────────────────────────────────────
+  // ── Dashboard ─────────────────────────────────────────────────────────────────
   return (
     <>
       <style>{`
-        @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
-        @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
+        @keyframes slideUp  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes toastSlide { from{opacity:0;transform:translateY(12px) scale(0.94)} to{opacity:1;transform:translateY(0) scale(1)} }
         @keyframes subtleGlow { 0%,100%{box-shadow:0 0 20px rgba(92,124,250,0.12)} 50%{box-shadow:0 0 36px rgba(92,124,250,0.28)} }
-        .arow { transition:background 0.1s; }
-        .arow:hover { background:rgba(255,255,255,0.025); }
-        .arow-conflict { background:rgba(245,158,11,0.07) !important; }
-        .arow-conflict:hover { background:rgba(245,158,11,0.12) !important; }
-        .fpill { padding:5px 12px; border-radius:8px; font-size:12px; font-weight:600;
-                 cursor:pointer; border:1px solid #1c1f2e; background:#0a0b0f; color:#4b5563; transition:all 0.15s; }
-        .fpill:hover { border-color:#2a2d4a; color:#9ca3af; }
-        .fpill.on { background:rgba(92,124,250,0.15); border-color:rgba(92,124,250,0.45); color:#748ffc; }
-        input[type=text],input[type=number],select{ font-size:14px; }
-        input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{ -webkit-appearance:none; }
+        .arow{transition:background 0.1s;}
+        .arow:hover{background:rgba(255,255,255,0.025);}
+        .arow-conflict{background:rgba(245,158,11,0.07) !important;}
+        .arow-conflict:hover{background:rgba(245,158,11,0.12) !important;}
+        .fpill{padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;
+               border:1px solid #1c1f2e;background:#0a0b0f;color:#4b5563;transition:all 0.15s;}
+        .fpill:hover{border-color:#2a2d4a;color:#9ca3af;}
+        .fpill.on{background:rgba(92,124,250,0.15);border-color:rgba(92,124,250,0.45);color:#748ffc;}
+        input[type=text],input[type=number],select{font-size:14px;}
+        input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;}
       `}</style>
 
       <div className="min-h-screen" style={{ background:'#0a0b0f', animation:'fadeIn 0.2s ease-out' }}>
 
         {/* ── Top bar ── */}
-        <div className="sticky top-0 z-30 flex items-center gap-3 px-4 sm:px-6 py-3"
+        <div className="sticky top-0 z-30 flex items-center gap-2 px-4 sm:px-6 py-3"
           style={{ background:'rgba(10,11,15,0.93)', borderBottom:'1px solid #1c1f2e', backdropFilter:'blur(12px)' }}>
+
           <button onClick={() => navigate('/')}
-            className="flex items-center gap-1.5 text-sm font-medium transition-colors"
+            className="flex items-center gap-1.5 text-sm font-medium transition-colors shrink-0"
             style={{ color:'#6b7280' }}
-            onMouseOver={e => e.currentTarget.style.color='#e2e8f0'}
-            onMouseOut={e  => e.currentTarget.style.color='#6b7280'}>
-            <ArrowLeft className="w-4 h-4" /><span className="hidden sm:inline">Booking Form</span>
+            onMouseOver={e=>e.currentTarget.style.color='#e2e8f0'}
+            onMouseOut={e =>e.currentTarget.style.color='#6b7280'}>
+            <ArrowLeft className="w-4 h-4" /><span className="hidden sm:inline">Booking</span>
           </button>
 
-          <div className="flex items-center gap-2 ml-2">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+          <div className="flex items-center gap-2 ml-1 mr-auto">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
               style={{ background:'rgba(76,110,245,0.2)', border:'1px solid rgba(76,110,245,0.3)' }}>
               <Crown className="w-3.5 h-3.5" style={{ color:'#748ffc' }} />
             </div>
-            <span className="font-bold text-sm text-gray-200">Ministry Admin</span>
-            <span className="hidden sm:inline text-xs font-medium" style={{ color:'#374151' }}>— 2323 KvK</span>
+            <span className="font-bold text-sm text-gray-200 hidden sm:inline">Ministry Admin</span>
+            <span className="hidden md:inline text-xs font-medium" style={{ color:'#374151' }}>— 2323 KvK</span>
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
-            <button onClick={() => exportCsv(displayed, conflictMap)} disabled={displayed.length===0}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-40"
-              style={{ background:'rgba(76,110,245,0.12)', border:'1px solid rgba(76,110,245,0.3)', color:'#748ffc' }}>
-              <Download className="w-3.5 h-3.5" /><span className="hidden sm:inline">Export CSV</span>
-            </button>
-            <button onClick={fetchData} disabled={loading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-              style={{ background:'rgba(255,255,255,0.05)', border:'1px solid #1c1f2e', color:'#6b7280' }}>
-              <RefreshCw className={`w-3.5 h-3.5 ${loading?'animate-spin':''}`} />
-              <span className="hidden sm:inline">Refresh</span>
-            </button>
-            <button onClick={logout}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-              style={{ background:'rgba(244,63,94,0.08)', border:'1px solid rgba(244,63,94,0.2)', color:'#f43f5e' }}>
-              <LogOut className="w-3.5 h-3.5" /><span className="hidden sm:inline">Logout</span>
-            </button>
-          </div>
+          {/* ── Action buttons ── */}
+          {/* Add Player — emerald */}
+          <button onClick={() => setShowAdd(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all active:scale-95"
+            style={{ background:'rgba(16,185,129,0.12)', border:'1px solid rgba(16,185,129,0.3)', color:'#6ee7b7' }}
+            onMouseOver={e=>{e.currentTarget.style.background='rgba(16,185,129,0.2)';e.currentTarget.style.borderColor='rgba(16,185,129,0.5)'}}
+            onMouseOut={e =>{e.currentTarget.style.background='rgba(16,185,129,0.12)';e.currentTarget.style.borderColor='rgba(16,185,129,0.3)'}}>
+            <UserPlus className="w-3.5 h-3.5" /><span className="hidden sm:inline">Add Player</span>
+          </button>
+
+          {/* Export CSV — indigo */}
+          <button onClick={() => exportCsv(displayed, conflictMap)} disabled={displayed.length===0}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-40"
+            style={{ background:'rgba(76,110,245,0.12)', border:'1px solid rgba(76,110,245,0.3)', color:'#748ffc' }}>
+            <Download className="w-3.5 h-3.5" /><span className="hidden sm:inline">Export</span>
+          </button>
+
+          {/* Refresh */}
+          <button onClick={fetchData} disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+            style={{ background:'rgba(255,255,255,0.05)', border:'1px solid #1c1f2e', color:'#6b7280' }}>
+            <RefreshCw className={`w-3.5 h-3.5 ${loading?'animate-spin':''}`} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+
+          {/* Logout — rose */}
+          <button onClick={logout}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+            style={{ background:'rgba(244,63,94,0.08)', border:'1px solid rgba(244,63,94,0.2)', color:'#f43f5e' }}>
+            <LogOut className="w-3.5 h-3.5" /><span className="hidden sm:inline">Logout</span>
+          </button>
         </div>
 
         <div className="px-4 sm:px-6 py-6 space-y-5" style={{ maxWidth:1440, margin:'0 auto' }}>
 
           {/* Stats */}
           <div className="flex flex-wrap gap-3">
-            <StatCard icon={<Users       className="w-3.5 h-3.5" />} label="Total"     value={rows.length} />
+            <StatCard icon={<Users         className="w-3.5 h-3.5" />} label="Total"     value={rows.length} />
             <StatCard icon={<AlertTriangle className="w-3.5 h-3.5" />} label="Conflicts" value={totalConflicts}
               accent={totalConflicts>0?'rgba(245,158,11,0.5)':undefined} />
             <StatCard icon={<span style={{fontSize:13}}>⚒️</span>} label="Day 1" value={day1Count} accent="rgba(76,110,245,0.5)" />
             <StatCard icon={<span style={{fontSize:13}}>⚔️</span>} label="Day 4" value={day4Count} accent="rgba(245,158,11,0.5)" />
-            <StatCard icon={<TrendingUp  className="w-3.5 h-3.5" />} label="Both"      value={bothCount} accent="rgba(139,92,246,0.5)" />
+            <StatCard icon={<TrendingUp    className="w-3.5 h-3.5" />} label="Both"      value={bothCount} accent="rgba(139,92,246,0.5)" />
           </div>
 
           {/* Filters */}
@@ -810,10 +852,11 @@ export default function Admin() {
             </div>
             <div className="relative ml-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color:'#4b5563' }} />
-              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search player…"
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Search player…"
                 className="pl-9 pr-4 py-2 rounded-xl text-sm placeholder-gray-600 focus:outline-none focus:ring-1"
-                style={{ background:'#0f1117', border:'1px solid #1c1f2e', width:180,
-                         color:'#e2e8f0', '--tw-ring-color':'rgba(92,124,250,0.3)' }} />
+                style={{ background:'#0f1117', border:'1px solid #1c1f2e', width:180, color:'#e2e8f0',
+                         '--tw-ring-color':'rgba(92,124,250,0.3)' }} />
             </div>
           </div>
 
@@ -824,7 +867,7 @@ export default function Admin() {
               <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" style={{ color:'#fcd34d' }} />
               <p style={{ fontSize:12, color:'#fcd34d', fontWeight:600, lineHeight:1.5 }}>
                 {totalConflicts} booking{totalConflicts!==1?'s':''} share a time slot (amber rows).
-                Award the slot to the player with the highest ROI score.
+                Award the slot to the highest ROI score.
               </p>
             </div>
           )}
@@ -832,8 +875,7 @@ export default function Admin() {
           {/* Table / States */}
           {loading ? (
             <div className="flex items-center justify-center py-24 gap-3 text-gray-600">
-              <Loader2 className="w-6 h-6 animate-spin" />
-              <span className="text-sm font-medium">Loading appointments…</span>
+              <Loader2 className="w-6 h-6 animate-spin" /><span className="text-sm font-medium">Loading…</span>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center py-20 gap-4 text-center">
@@ -841,21 +883,24 @@ export default function Admin() {
               <p className="text-sm font-semibold" style={{ color:'#fda4af' }}>Supabase error</p>
               <p className="text-xs font-mono px-4 py-2 rounded-lg max-w-md" style={{ color:'#9ca3af', background:'#12141c' }}>{error}</p>
               <button onClick={fetchData} className="px-4 py-2 rounded-xl text-sm font-semibold"
-                style={{ background:'rgba(76,110,245,0.15)', border:'1px solid rgba(76,110,245,0.3)', color:'#748ffc' }}>
-                Retry
-              </button>
+                style={{ background:'rgba(76,110,245,0.15)', border:'1px solid rgba(76,110,245,0.3)', color:'#748ffc' }}>Retry</button>
             </div>
           ) : displayed.length === 0 ? (
-            <div className="flex flex-col items-center py-24 gap-3">
+            <div className="flex flex-col items-center py-24 gap-4">
               <Calendar className="w-10 h-10" style={{ color:'#2d3748' }} />
               <p className="text-sm font-semibold" style={{ color:'#4b5563' }}>
                 {rows.length===0 ? 'No appointments yet' : 'No results match the current filters'}
               </p>
-              {(allianceFilter!=='ALL'||dayFilter!=='ALL'||search) && (
-                <button onClick={() => { setAlliance('ALL'); setDay('ALL'); setSearch('') }}
-                  className="text-xs underline underline-offset-2" style={{ color:'#748ffc' }}>
-                  Clear filters
+              {rows.length===0 && (
+                <button onClick={() => setShowAdd(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                  style={{ background:'rgba(16,185,129,0.12)', border:'1px solid rgba(16,185,129,0.3)', color:'#6ee7b7' }}>
+                  <UserPlus className="w-4 h-4" />Add First Player
                 </button>
+              )}
+              {(allianceFilter!=='ALL'||dayFilter!=='ALL'||search) && (
+                <button onClick={() => {setAlliance('ALL');setDay('ALL');setSearch('')}}
+                  className="text-xs underline underline-offset-2" style={{ color:'#748ffc' }}>Clear filters</button>
               )}
             </div>
           ) : (
@@ -864,25 +909,23 @@ export default function Admin() {
                 <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
                   <thead>
                     <tr>
-                      <Th col="_rank">      #          </Th>
-                      <Th col="player_name">Player     </Th>
-                      <Th col="alliance">   Alliance   </Th>
-                      <Th col="tc_level">   TC         </Th>
-                      <Th col="_days">      Days       </Th>
+                      <Th col="_rank">        #          </Th>
+                      <Th col="player_name">  Player     </Th>
+                      <Th col="alliance">     Alliance   </Th>
+                      <Th col="tc_level">     TC         </Th>
+                      <Th col="_days">        Days       </Th>
                       <Th col="time_slot_day1">Day 1 Slot</Th>
                       <Th col="time_slot_day4">Day 4 Slot</Th>
-                      <Th col="construction_days">Const</Th>
-                      <Th col="research_days">Research </Th>
-                      <Th col="training_days">Training </Th>
+                      <Th col="construction_days">Const  </Th>
+                      <Th col="research_days">  Research </Th>
+                      <Th col="training_days">  Training </Th>
                       <Th col="true_gold_count" right>Gold</Th>
-                      <Th col="_roi"        right>ROI Score</Th>
-                      <Th col="_conflict">  ⚠️         </Th>
-                      <Th col="created_at"> Submitted  </Th>
-                      {/* Actions column — no sort */}
+                      <Th col="_roi"            right>ROI Score</Th>
+                      <Th col="_conflict">    ⚠️         </Th>
+                      <Th col="created_at">   Submitted  </Th>
                       <th style={{ padding:'10px 14px', fontSize:11, fontWeight:700, color:'#6b7280',
                                    textTransform:'uppercase', letterSpacing:'0.07em', background:'#0a0b0f',
-                                   borderBottom:'1px solid #1c1f2e', position:'sticky', top:0, zIndex:10,
-                                   whiteSpace:'nowrap' }}>
+                                   borderBottom:'1px solid #1c1f2e', position:'sticky', top:0, zIndex:10, whiteSpace:'nowrap' }}>
                         Actions
                       </th>
                     </tr>
@@ -891,7 +934,7 @@ export default function Admin() {
                     {displayed.map((r, idx) => {
                       const conflicts   = conflictMap.get(r.id)
                       const hasConflict = conflicts && conflicts.size > 0
-                      const days = (r.selected_days||[]).map(d => d==='day1'?'⚒️':'⚔️').join(' ')
+                      const days = (r.selected_days||[]).map(d=>d==='day1'?'⚒️':'⚔️').join(' ')
                       return (
                         <tr key={r.id} className={`arow${hasConflict?' arow-conflict':''}`}
                           style={{ borderBottom:'1px solid #12141c' }}>
@@ -908,39 +951,28 @@ export default function Admin() {
                             color:conflicts?.has('day4')?'#fcd34d':'#6b7280', fontWeight:conflicts?.has('day4')?700:400 }}>
                             {fmtSlot(r.time_slot_day4)}
                           </td>
-                          <td style={{ padding:'10px 14px', color:'#6b7280', whiteSpace:'nowrap' }}>{fmtSpd(r.construction_days, r.construction_hours)}</td>
-                          <td style={{ padding:'10px 14px', color:'#6b7280', whiteSpace:'nowrap' }}>{fmtSpd(r.research_days,     r.research_hours)}</td>
-                          <td style={{ padding:'10px 14px', color:'#6b7280', whiteSpace:'nowrap' }}>{fmtSpd(r.training_days,     r.training_hours)}</td>
+                          <td style={{ padding:'10px 14px', color:'#6b7280', whiteSpace:'nowrap' }}>{fmtSpd(r.construction_days,r.construction_hours)}</td>
+                          <td style={{ padding:'10px 14px', color:'#6b7280', whiteSpace:'nowrap' }}>{fmtSpd(r.research_days,r.research_hours)}</td>
+                          <td style={{ padding:'10px 14px', color:'#6b7280', whiteSpace:'nowrap' }}>{fmtSpd(r.training_days,r.training_hours)}</td>
                           <td style={{ padding:'10px 14px', textAlign:'right', color:'#fcd34d', fontWeight:600, whiteSpace:'nowrap' }}>{fmtGold(r.true_gold_count)}</td>
                           <td style={{ padding:'10px 14px', textAlign:'right', whiteSpace:'nowrap' }}><RoiPill score={r._roi} /></td>
                           <td style={{ padding:'10px 14px', whiteSpace:'nowrap' }}><ConflictPill conflicts={conflicts} /></td>
                           <td style={{ padding:'10px 14px', color:'#4b5563', whiteSpace:'nowrap', fontSize:12 }}>{fmtDate(r.created_at)}</td>
-                          {/* Actions */}
                           <td style={{ padding:'8px 12px', whiteSpace:'nowrap' }}>
                             <div className="flex items-center gap-1.5">
-                              {/* Edit */}
-                              <button
-                                onClick={() => setEditRow(r)}
-                                title="Edit booking"
+                              <button onClick={() => setEditRow(r)} title="Edit"
                                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all active:scale-95"
-                                style={{ background:'rgba(76,110,245,0.1)', border:'1px solid rgba(76,110,245,0.25)',
-                                         color:'#748ffc' }}
-                                onMouseOver={e => { e.currentTarget.style.background='rgba(76,110,245,0.2)'; e.currentTarget.style.borderColor='rgba(76,110,245,0.5)' }}
-                                onMouseOut={e  => { e.currentTarget.style.background='rgba(76,110,245,0.1)'; e.currentTarget.style.borderColor='rgba(76,110,245,0.25)' }}>
-                                <Pencil className="w-3 h-3" />
-                                <span className="hidden sm:inline">Edit</span>
+                                style={{ background:'rgba(76,110,245,0.1)', border:'1px solid rgba(76,110,245,0.25)', color:'#748ffc' }}
+                                onMouseOver={e=>{e.currentTarget.style.background='rgba(76,110,245,0.2)';e.currentTarget.style.borderColor='rgba(76,110,245,0.5)'}}
+                                onMouseOut={e =>{e.currentTarget.style.background='rgba(76,110,245,0.1)';e.currentTarget.style.borderColor='rgba(76,110,245,0.25)'}}>
+                                <Pencil className="w-3 h-3" /><span className="hidden sm:inline">Edit</span>
                               </button>
-                              {/* Delete */}
-                              <button
-                                onClick={() => setDelTarget(r)}
-                                title="Delete booking"
+                              <button onClick={() => setDelTarget(r)} title="Delete"
                                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all active:scale-95"
-                                style={{ background:'rgba(244,63,94,0.08)', border:'1px solid rgba(244,63,94,0.2)',
-                                         color:'#f43f5e' }}
-                                onMouseOver={e => { e.currentTarget.style.background='rgba(244,63,94,0.18)'; e.currentTarget.style.borderColor='rgba(244,63,94,0.45)' }}
-                                onMouseOut={e  => { e.currentTarget.style.background='rgba(244,63,94,0.08)'; e.currentTarget.style.borderColor='rgba(244,63,94,0.2)' }}>
-                                <Trash2 className="w-3 h-3" />
-                                <span className="hidden sm:inline">Delete</span>
+                                style={{ background:'rgba(244,63,94,0.08)', border:'1px solid rgba(244,63,94,0.2)', color:'#f43f5e' }}
+                                onMouseOver={e=>{e.currentTarget.style.background='rgba(244,63,94,0.18)';e.currentTarget.style.borderColor='rgba(244,63,94,0.45)'}}
+                                onMouseOut={e =>{e.currentTarget.style.background='rgba(244,63,94,0.08)';e.currentTarget.style.borderColor='rgba(244,63,94,0.2)'}}>
+                                <Trash2 className="w-3 h-3" /><span className="hidden sm:inline">Delete</span>
                               </button>
                             </div>
                           </td>
@@ -963,9 +995,20 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* ── Edit Modal ── */}
+      {/* ── Add Player modal ── */}
+      {showAdd && (
+        <BookingModal
+          mode="add"
+          onSave={handleAddSave}
+          onClose={() => setShowAdd(false)}
+          saving={addSaving}
+        />
+      )}
+
+      {/* ── Edit modal ── */}
       {editRow && (
-        <EditModal
+        <BookingModal
+          mode="edit"
           row={editRow}
           onSave={handleEditSave}
           onClose={() => setEditRow(null)}
@@ -973,7 +1016,7 @@ export default function Admin() {
         />
       )}
 
-      {/* ── Delete Confirm Modal ── */}
+      {/* ── Delete confirm modal ── */}
       {deleteTarget && (
         <DeleteModal
           row={deleteTarget}
@@ -982,6 +1025,9 @@ export default function Admin() {
           onCancel={() => setDelTarget(null)}
         />
       )}
+
+      {/* ── Admin toast ── */}
+      <AdminToast toast={adminToast} onClose={() => setAdminToast(null)} />
     </>
   )
 }
