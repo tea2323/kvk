@@ -884,35 +884,44 @@ export default function App() {
         setForm(INITIAL_FORM)
         setErrors({})
 
-        // ── Background Supabase save (non-blocking) ──────────────────────────
+        // ── Supabase save (awaited — explicit type coercion & error surfacing) ─
         const snap = { ...form }  // capture before React state clears
-        supabase.from('kvk_appointments').insert([{
-          player_name:        snap.playerName,
-          alliance:           snap.alliance,
-          selected_days:      snap.kvkDays,            // DB col: selected_days
-          tc_level:           snap.tcLevel,
-          construction_days:  snap.constructionDays,
-          construction_hours: snap.constructionHours,
-          research_days:      snap.researchDays,
-          research_hours:     snap.researchHours,
-          training_days:      snap.trainingDays,
-          training_hours:     snap.trainingHours,
-          true_gold_count:    parseInt(snap.trueGold) || 0, // DB col: true_gold_count
-          time_slot_day1:     snap.timeSlotDay1 || null,
-          time_slot_day4:     snap.timeSlotDay4 || null,
-          // roi_score not in table — computed client-side in Admin
-        }]).then(({ error }) => {
-          if (error) {
-            console.error('[Supabase insert FAILED]', {
-              code:    error.code,
-              message: error.message,
-              details: error.details,
-              hint:    error.hint,
-            })
-          } else {
-            console.log('[Supabase] ✅ Appointment saved')
-          }
-        })
+
+        // Strict type coercion: every numeric field → integer, defaulting to 0
+        const supabasePayload = {
+          player_name:        String(snap.playerName).trim(),
+          alliance:           String(snap.alliance),
+          selected_days:      Array.isArray(snap.kvkDays) ? snap.kvkDays : [],
+          tc_level:           String(snap.tcLevel),
+          construction_days:  parseInt(snap.constructionDays,  10) || 0,
+          construction_hours: parseInt(snap.constructionHours, 10) || 0,
+          research_days:      parseInt(snap.researchDays,      10) || 0,
+          research_hours:     parseInt(snap.researchHours,     10) || 0,
+          training_days:      parseInt(snap.trainingDays,      10) || 0,
+          training_hours:     parseInt(snap.trainingHours,     10) || 0,
+          true_gold_count:    parseInt(snap.trueGold,          10) || 0,
+          time_slot_day1:     snap.timeSlotDay1 ? String(snap.timeSlotDay1) : null,
+          time_slot_day4:     snap.timeSlotDay4 ? String(snap.timeSlotDay4) : null,
+        }
+
+        console.log('[Supabase] Inserting payload:', supabasePayload)
+
+        const { data: sbData, error: sbError } = await supabase
+          .from('kvk_appointments')
+          .insert([supabasePayload])
+
+        if (sbError) {
+          console.error('SUPABASE INSERT ERROR:', sbError)
+          // eslint-disable-next-line no-alert
+          alert(
+            `Supabase Error: ${sbError.message}` +
+            (sbError.details ? `\nDetails: ${sbError.details}` : '') +
+            (sbError.hint    ? `\nHint: ${sbError.hint}`       : '') +
+            (sbError.code    ? `\nCode: ${sbError.code}`       : '')
+          )
+        } else {
+          console.log('SUPABASE INSERT SUCCESS:', sbData)
+        }
         // ────────────────────────────────────────────────────────────────────
       } else {
         showToast('error', t.errFailed, `Status ${res.status}`)
