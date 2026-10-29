@@ -4,6 +4,8 @@ import {
   Shield, Send, Loader2, CheckCircle2, XCircle, AlertCircle,
   Sparkles, X, User, ChevronDown, Globe, Plus, Minus
 } from 'lucide-react'
+import { supabase } from './lib/supabase.js'
+import { calculateRoiScore } from './lib/roi.js'
 
 // ─── Hardcoded Discord Webhook ────────────────────────────────────────────────
 const DISCORD_WEBHOOK_URL =
@@ -882,6 +884,28 @@ export default function App() {
         setOk({ ...form })
         setForm(INITIAL_FORM)
         setErrors({})
+
+        // ── Background Supabase save (non-blocking) ──────────────────────────
+        const snap = { ...form }                     // capture before state clears
+        supabase.from('kvk_appointments').insert([{
+          player_name:        snap.playerName,
+          alliance:           snap.alliance,
+          kvk_days:           snap.kvkDays,
+          tc_level:           snap.tcLevel,
+          construction_days:  snap.constructionDays,
+          construction_hours: snap.constructionHours,
+          research_days:      snap.researchDays,
+          research_hours:     snap.researchHours,
+          training_days:      snap.trainingDays,
+          training_hours:     snap.trainingHours,
+          true_gold:          parseInt(snap.trueGold) || 0,
+          time_slot_day1:     snap.timeSlotDay1 || null,
+          time_slot_day4:     snap.timeSlotDay4 || null,
+          roi_score:          calculateRoiScore(snap),
+        }]).then(({ error }) => {
+          if (error) console.warn('[Supabase insert]', error.message)
+        })
+        // ────────────────────────────────────────────────────────────────────
       } else {
         showToast('error', t.errFailed, `Status ${res.status}`)
       }
