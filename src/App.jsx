@@ -2,8 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import {
   Crown, Sword, Hammer, FlaskConical, Coins, Clock,
   Shield, Send, Loader2, CheckCircle2, XCircle, AlertCircle,
-  Sparkles, X, User, ChevronDown, Globe, Plus, Minus,
-  Pickaxe, Dumbbell
+  Sparkles, X, User, ChevronDown, Globe, Plus, Minus
 } from 'lucide-react'
 
 // ─── Hardcoded Discord Webhook ────────────────────────────────────────────────
@@ -14,23 +13,23 @@ const DISCORD_WEBHOOK_URL =
 const ALLIANCES = ['TEA', 'VIK', 'ERA', 'FFF']
 
 const ALLIANCE_STYLES = {
-  TEA: { border: '#10b981', bg: 'rgba(16,185,129,0.12)',  text: '#6ee7b7', glow: '0 0 16px rgba(16,185,129,0.4)'  },
-  VIK: { border: '#f43f5e', bg: 'rgba(244,63,94,0.12)',   text: '#fda4af', glow: '0 0 16px rgba(244,63,94,0.4)'   },
-  ERA: { border: '#8b5cf6', bg: 'rgba(139,92,246,0.12)',  text: '#c4b5fd', glow: '0 0 16px rgba(139,92,246,0.4)'  },
-  FFF: { border: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  text: '#fcd34d', glow: '0 0 16px rgba(245,158,11,0.4)'  },
+  TEA: { border: '#10b981', bg: 'rgba(16,185,129,0.12)', text: '#6ee7b7', glow: '0 0 16px rgba(16,185,129,0.4)' },
+  VIK: { border: '#f43f5e', bg: 'rgba(244,63,94,0.12)',  text: '#fda4af', glow: '0 0 16px rgba(244,63,94,0.4)'  },
+  ERA: { border: '#8b5cf6', bg: 'rgba(139,92,246,0.12)', text: '#c4b5fd', glow: '0 0 16px rgba(139,92,246,0.4)' },
+  FFF: { border: '#f59e0b', bg: 'rgba(245,158,11,0.12)', text: '#fcd34d', glow: '0 0 16px rgba(245,158,11,0.4)' },
 }
 
-// KvK Prep Days
+// KvK Prep Days — multi-selectable
 const KVK_DAYS = [
-  { id: 'day1', emoji: '⚒️',  accentBorder: '#4c6ef5', accentBg: 'rgba(76,110,245,0.12)',  accentText: '#748ffc', accentGlow: '0 0 18px rgba(92,124,250,0.4)'  },
-  { id: 'day4', emoji: '⚔️',  accentBorder: '#f59e0b', accentBg: 'rgba(245,158,11,0.12)', accentText: '#fcd34d', accentGlow: '0 0 18px rgba(245,158,11,0.4)'  },
+  { id: 'day1', emoji: '⚒️', accentBorder: '#4c6ef5', accentBg: 'rgba(76,110,245,0.13)',  accentText: '#748ffc', accentGlow: '0 0 18px rgba(92,124,250,0.4)'  },
+  { id: 'day4', emoji: '⚔️', accentBorder: '#f59e0b', accentBg: 'rgba(245,158,11,0.13)', accentText: '#fcd34d', accentGlow: '0 0 18px rgba(245,158,11,0.4)'  },
 ]
 
-// TC Level progression: 25 → 26 → … → 30 → TG1 → TG2 → TG3
+// TC Level progression
 const TC_LEVELS = ['25', '26', '27', '28', '29', '30', 'TG1', 'TG2', 'TG3']
 const TC_IS_GOLD = (v) => v.startsWith('TG')
 
-// Generate 30-min UTC slots 00:00–23:30
+// 30-min UTC slots 00:00–23:30
 const TIME_SLOTS = (() => {
   const slots = []
   for (let h = 0; h < 24; h++) {
@@ -60,49 +59,46 @@ const T = {
   en: {
     badge: 'Server 2323 · KvK Season',
     subtitle: 'Ministry Appointment Booking',
-    // sections
     secPlayer:   'Player Details',
     secDay:      'KvK Prep Day',
     secTc:       'Town Center Level',
     secSpeedups: 'Speedups & Resources',
     secSlot:     'Time Slot',
-    // fields
     labelName:         'Player Name / In-Game Name',
     labelAlliance:     'Alliance',
-    labelDay:          'Which day are you booking for?',
+    labelDay:          'Select one or both prep days',
     day1Label:         'Day 1',
     day1Sub:           'Construction & Research',
     day4Label:         'Day 4',
     day4Sub:           'Training',
-    labelTc:           'TC Level / Upgrade Goal',
+    labelTc:           'TC Level',
     labelConstruction: 'Construction',
     labelResearch:     'Research',
     labelTraining:     'Training',
     labelGold:         'True Gold Count',
-    labelSlot:         'Preferred Time Slot (UTC)',
-    // placeholders
+    labelSlot:         'Time Slot (UTC)',
+    slotHintBoth:      'Select a time slot for each chosen day',
+    slotHintNone:      'Select a prep day above to unlock time slots',
     placeholderName: 'Your in-game name…',
     placeholderGold: 'e.g. 250 000',
     placeholderSlot: 'Select a slot…',
     days:  'Days',
     hours: 'Hours',
-    // buttons
     btnSubmit:     'Book Ministry Appointment',
     btnSubmitting: 'Submitting…',
-    // success modal
     successTitle: 'Appointment Booked!',
     successMsg:   'Your request was sent to the alliance Discord channel.',
     successClose: 'Done',
-    // summary rows
     rowCommander: 'Commander',
     rowAlliance:  'Alliance',
     rowDay:       'KvK Day',
     rowTc:        'TC Level',
     rowSlot:      'Time Slot',
-    // errors
+    rowSlotDay1:  'Day 1 Slot',
+    rowSlotDay4:  'Day 4 Slot',
     errName:       'Player name is required.',
     errAlliance:   'Select your alliance.',
-    errDay:        'Select a KvK prep day.',
+    errDay:        'Select at least one KvK prep day.',
     errTc:         'Select your TC level.',
     errSlot:       'Select a time slot.',
     errNetwork:    'Network Error',
@@ -121,32 +117,32 @@ const T = {
     secSlot:     'Franja Horaria',
     labelName:         'Nombre en el Juego',
     labelAlliance:     'Alianza',
-    labelDay:          '¿Para qué día reservas?',
+    labelDay:          'Selecciona uno o ambos días',
     day1Label:         'Día 1',
     day1Sub:           'Construcción e Investigación',
     day4Label:         'Día 4',
     day4Sub:           'Entrenamiento',
-    labelTc:           'Nivel de TC / Meta de Mejora',
+    labelTc:           'Nivel TC',
     labelConstruction: 'Construcción',
     labelResearch:     'Investigación',
     labelTraining:     'Entrenamiento',
     labelGold:         'Oro Verdadero',
     labelSlot:         'Franja Horaria (UTC)',
+    slotHintBoth:      'Selecciona una franja para cada día elegido',
+    slotHintNone:      'Elige un día de preparación para desbloquear',
     placeholderName: 'Tu nombre en el juego…',
     placeholderGold: 'ej. 250 000',
     placeholderSlot: 'Elige una franja…',
     days: 'Días', hours: 'Horas',
     btnSubmit: 'Reservar Cita en el Ministerio', btnSubmitting: 'Enviando…',
-    successTitle: '¡Cita Reservada!',
-    successMsg:   'Tu solicitud fue enviada al canal Discord de la alianza.',
-    successClose: 'Listo',
+    successTitle: '¡Cita Reservada!', successMsg: 'Tu solicitud fue enviada al canal Discord de la alianza.', successClose: 'Listo',
     rowCommander: 'Comandante', rowAlliance: 'Alianza', rowDay: 'Día KvK',
-    rowTc: 'Nivel TC', rowSlot: 'Franja Horaria',
+    rowTc: 'Nivel TC', rowSlot: 'Franja Horaria', rowSlotDay1: 'Franja Día 1', rowSlotDay4: 'Franja Día 4',
     errName: 'El nombre del jugador es obligatorio.', errAlliance: 'Selecciona tu alianza.',
-    errDay: 'Selecciona un día de preparación.', errTc: 'Selecciona tu nivel de TC.',
-    errSlot: 'Selecciona una franja horaria.', errNetwork: 'Error de Red',
-    errNetworkMsg: 'No se pudo contactar Discord.', errFailed: 'Error al Enviar',
-    errCheck: 'Corrige los campos marcados.',
+    errDay: 'Selecciona al menos un día de preparación.', errTc: 'Selecciona tu nivel de TC.',
+    errSlot: 'Selecciona una franja horaria.',
+    errNetwork: 'Error de Red', errNetworkMsg: 'No se pudo contactar Discord.',
+    errFailed: 'Error al Enviar', errCheck: 'Corrige los campos marcados.',
     footer: 'Horarios en UTC · Franjas de 30 min · 2323 KvK',
   },
   pt: {
@@ -159,32 +155,32 @@ const T = {
     secSlot:     'Horário',
     labelName:         'Nome no Jogo',
     labelAlliance:     'Aliança',
-    labelDay:          'Para qual dia você está reservando?',
+    labelDay:          'Selecione um ou ambos os dias',
     day1Label:         'Dia 1',
     day1Sub:           'Construção e Pesquisa',
     day4Label:         'Dia 4',
     day4Sub:           'Treinamento',
-    labelTc:           'Nível de TC / Meta de Upgrade',
+    labelTc:           'Nível TC',
     labelConstruction: 'Construção',
     labelResearch:     'Pesquisa',
     labelTraining:     'Treinamento',
     labelGold:         'Ouro Verdadeiro',
-    labelSlot:         'Horário Preferido (UTC)',
+    labelSlot:         'Horário (UTC)',
+    slotHintBoth:      'Selecione um horário para cada dia escolhido',
+    slotHintNone:      'Escolha um dia de preparação para desbloquear',
     placeholderName: 'Seu nome no jogo…',
     placeholderGold: 'ex. 250 000',
     placeholderSlot: 'Escolha um horário…',
     days: 'Dias', hours: 'Horas',
     btnSubmit: 'Reservar Consulta no Ministério', btnSubmitting: 'Enviando…',
-    successTitle: 'Consulta Reservada!',
-    successMsg:   'Sua solicitação foi enviada ao canal Discord da aliança.',
-    successClose: 'Feito',
+    successTitle: 'Consulta Reservada!', successMsg: 'Sua solicitação foi enviada ao canal Discord da aliança.', successClose: 'Feito',
     rowCommander: 'Comandante', rowAlliance: 'Aliança', rowDay: 'Dia KvK',
-    rowTc: 'Nível TC', rowSlot: 'Horário',
+    rowTc: 'Nível TC', rowSlot: 'Horário', rowSlotDay1: 'Horário Dia 1', rowSlotDay4: 'Horário Dia 4',
     errName: 'Nome do jogador é obrigatório.', errAlliance: 'Selecione sua aliança.',
-    errDay: 'Selecione um dia de preparação.', errTc: 'Selecione o nível do seu TC.',
-    errSlot: 'Selecione um horário.', errNetwork: 'Erro de Rede',
-    errNetworkMsg: 'Não foi possível alcançar o Discord.', errFailed: 'Falha no Envio',
-    errCheck: 'Corrija os campos destacados.',
+    errDay: 'Selecione ao menos um dia de preparação.', errTc: 'Selecione o nível do seu TC.',
+    errSlot: 'Selecione um horário.',
+    errNetwork: 'Erro de Rede', errNetworkMsg: 'Não foi possível alcançar o Discord.',
+    errFailed: 'Falha no Envio', errCheck: 'Corrija os campos destacados.',
     footer: 'Horários em UTC · Intervalos de 30 min · 2323 KvK',
   },
   ar: {
@@ -197,32 +193,32 @@ const T = {
     secSlot:     'الفترة الزمنية',
     labelName:         'اسم اللاعب / الاسم في اللعبة',
     labelAlliance:     'التحالف',
-    labelDay:          'ما هو اليوم الذي تحجز له؟',
+    labelDay:          'اختر يومًا واحدًا أو كليهما',
     day1Label:         'اليوم 1',
     day1Sub:           'البناء والبحث',
     day4Label:         'اليوم 4',
     day4Sub:           'التدريب',
-    labelTc:           'مستوى TC / هدف الترقية',
+    labelTc:           'مستوى TC',
     labelConstruction: 'البناء',
     labelResearch:     'البحث',
     labelTraining:     'التدريب',
     labelGold:         'الذهب الحقيقي',
-    labelSlot:         'الفترة الزمنية المفضلة (UTC)',
+    labelSlot:         'الفترة الزمنية (UTC)',
+    slotHintBoth:      'اختر فترة زمنية لكل يوم محدد',
+    slotHintNone:      'اختر يوم التحضير أولاً',
     placeholderName: 'اسمك في اللعبة…',
     placeholderGold: 'مثال: 250000',
     placeholderSlot: 'اختر فترة زمنية…',
     days: 'أيام', hours: 'ساعات',
     btnSubmit: 'احجز موعد الوزارة', btnSubmitting: 'جارٍ الإرسال…',
-    successTitle: 'تم حجز الموعد!',
-    successMsg:   'تم إرسال طلبك إلى قناة Discord للتحالف.',
-    successClose: 'تم',
+    successTitle: 'تم حجز الموعد!', successMsg: 'تم إرسال طلبك إلى قناة Discord للتحالف.', successClose: 'تم',
     rowCommander: 'القائد', rowAlliance: 'التحالف', rowDay: 'يوم KvK',
-    rowTc: 'مستوى TC', rowSlot: 'الفترة الزمنية',
+    rowTc: 'مستوى TC', rowSlot: 'الفترة', rowSlotDay1: 'فترة اليوم 1', rowSlotDay4: 'فترة اليوم 4',
     errName: 'اسم اللاعب مطلوب.', errAlliance: 'اختر تحالفك.',
-    errDay: 'اختر يوم التحضير.', errTc: 'اختر مستوى TC.',
-    errSlot: 'اختر فترة زمنية.', errNetwork: 'خطأ في الشبكة',
-    errNetworkMsg: 'تعذر الوصول إلى Discord.', errFailed: 'فشل الإرسال',
-    errCheck: 'صحح الحقول المميزة.',
+    errDay: 'اختر يوم تحضير واحدًا على الأقل.', errTc: 'اختر مستوى TC.',
+    errSlot: 'اختر فترة زمنية.',
+    errNetwork: 'خطأ في الشبكة', errNetworkMsg: 'تعذر الوصول إلى Discord.',
+    errFailed: 'فشل الإرسال', errCheck: 'صحح الحقول المميزة.',
     footer: '2323 KvK · جميع الأوقات بتوقيت UTC · فترات 30 دقيقة',
   },
   de: {
@@ -235,53 +231,54 @@ const T = {
     secSlot:     'Zeitfenster',
     labelName:         'Spielername / In-Game-Name',
     labelAlliance:     'Allianz',
-    labelDay:          'Für welchen Tag buchst du?',
+    labelDay:          'Einen oder beide Tage wählen',
     day1Label:         'Tag 1',
     day1Sub:           'Bau & Forschung',
     day4Label:         'Tag 4',
     day4Sub:           'Training',
-    labelTc:           'TC-Level / Upgrade-Ziel',
+    labelTc:           'TC-Level',
     labelConstruction: 'Bau',
     labelResearch:     'Forschung',
     labelTraining:     'Training',
     labelGold:         'Echtes Gold',
     labelSlot:         'Zeitfenster (UTC)',
+    slotHintBoth:      'Zeitfenster für jeden gewählten Tag auswählen',
+    slotHintNone:      'Zuerst Vorbereitungstag auswählen',
     placeholderName: 'Dein In-Game-Name…',
     placeholderGold: 'z.B. 250 000',
     placeholderSlot: 'Zeitfenster wählen…',
     days: 'Tage', hours: 'Stunden',
     btnSubmit: 'Ministeriumstermin buchen', btnSubmitting: 'Wird gesendet…',
-    successTitle: 'Termin gebucht!',
-    successMsg:   'Deine Anfrage wurde an den Discord-Kanal gesendet.',
-    successClose: 'Fertig',
+    successTitle: 'Termin gebucht!', successMsg: 'Deine Anfrage wurde an den Discord-Kanal gesendet.', successClose: 'Fertig',
     rowCommander: 'Kommandant', rowAlliance: 'Allianz', rowDay: 'KvK-Tag',
-    rowTc: 'TC-Level', rowSlot: 'Zeitfenster',
+    rowTc: 'TC-Level', rowSlot: 'Zeitfenster', rowSlotDay1: 'Tag-1-Slot', rowSlotDay4: 'Tag-4-Slot',
     errName: 'Spielername ist erforderlich.', errAlliance: 'Wähle deine Allianz.',
-    errDay: 'Wähle einen Vorbereitungstag.', errTc: 'Wähle dein TC-Level.',
-    errSlot: 'Wähle ein Zeitfenster.', errNetwork: 'Netzwerkfehler',
-    errNetworkMsg: 'Discord konnte nicht erreicht werden.', errFailed: 'Übermittlung fehlgeschlagen',
-    errCheck: 'Korrigiere die markierten Felder.',
+    errDay: 'Wähle mindestens einen Vorbereitungstag.', errTc: 'Wähle dein TC-Level.',
+    errSlot: 'Wähle ein Zeitfenster.',
+    errNetwork: 'Netzwerkfehler', errNetworkMsg: 'Discord konnte nicht erreicht werden.',
+    errFailed: 'Übermittlung fehlgeschlagen', errCheck: 'Korrigiere die markierten Felder.',
     footer: 'Alle Zeiten UTC · 30-Minuten-Slots · 2323 KvK',
   },
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmtSpeedups   = (d, h) => !d && !h ? null : d && h ? `${d}d ${h}h` : d ? `${d}d` : `${h}h`
-const getSlotLabel  = (v) => TIME_SLOTS.find((s) => s.value === v)?.label ?? '—'
-const getKvkLabel   = (id, t) =>
+const fmtSpeedups  = (d, h) => !d && !h ? null : d && h ? `${d}d ${h}h` : d ? `${d}d` : `${h}h`
+const getSlotLabel = (v) => TIME_SLOTS.find((s) => s.value === v)?.label ?? '—'
+const getKvkLabel  = (id, t) =>
   id === 'day1' ? `${t.day1Label} (${t.day1Sub})` :
   id === 'day4' ? `${t.day4Label} (${t.day4Sub})` : '—'
 
 const INITIAL_FORM = {
-  playerName:         '',
-  alliance:           '',
-  kvkDay:             '',   // 'day1' | 'day4'
-  tcLevel:            '',   // '25'…'30' | 'TG1'…'TG3'
-  constructionDays:   0, constructionHours: 0,
-  researchDays:       0, researchHours:     0,
-  trainingDays:       0, trainingHours:     0,
-  trueGold:           '',
-  timeSlot:           '',
+  playerName:        '',
+  alliance:          '',
+  kvkDays:           [],    // [] | ['day1'] | ['day4'] | ['day1','day4']
+  tcLevel:           '',
+  constructionDays:  0, constructionHours:  0,
+  researchDays:      0, researchHours:      0,
+  trainingDays:      0, trainingHours:      0,
+  trueGold:          '',
+  timeSlotDay1:      '',    // slot for Day 1 (required when day1 in kvkDays)
+  timeSlotDay4:      '',    // slot for Day 4 (required when day4 in kvkDays)
 }
 
 // ─── Language Switcher ────────────────────────────────────────────────────────
@@ -312,23 +309,16 @@ function LangSwitcher({ lang, setLang }) {
       </button>
 
       {open && (
-        <div
-          className="absolute right-0 top-full mt-1.5 z-30 rounded-xl overflow-hidden py-1"
+        <div className="absolute right-0 top-full mt-1.5 z-30 rounded-xl overflow-hidden py-1"
           style={{ minWidth: 145, background: '#161820', border: '1px solid rgba(255,255,255,0.1)',
-                   boxShadow: '0 8px 32px rgba(0,0,0,0.6)', animation: 'fadeIn 0.15s ease-out' }}
-        >
+                   boxShadow: '0 8px 32px rgba(0,0,0,0.6)', animation: 'fadeIn 0.15s ease-out' }}>
           {LANGUAGES.map((l) => (
-            <button
-              key={l.code}
-              type="button"
+            <button key={l.code} type="button"
               onClick={() => { setLang(l.code); setOpen(false) }}
               className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors"
-              style={{
-                color:      l.code === lang ? '#748ffc' : '#9ca3af',
-                background: l.code === lang ? 'rgba(92,124,250,0.12)' : 'transparent',
-                fontWeight: l.code === lang ? 600 : 400,
-              }}
-            >
+              style={{ color: l.code === lang ? '#748ffc' : '#9ca3af',
+                       background: l.code === lang ? 'rgba(92,124,250,0.12)' : 'transparent',
+                       fontWeight: l.code === lang ? 600 : 400 }}>
               <span className="text-base">{l.flag}</span>
               <span>{l.name}</span>
             </button>
@@ -339,99 +329,198 @@ function LangSwitcher({ lang, setLang }) {
   )
 }
 
-// ─── KvK Day Selector ────────────────────────────────────────────────────────
-function KvkDaySelector({ value, onChange, error, t, isRTL }) {
-  return (
-    <div className="space-y-1.5">
-      <SectionMicroLabel label={t.labelDay} />
+// ─── KvK Day Multi-Selector ───────────────────────────────────────────────────
+function KvkDaySelector({ value, onChange, error, t }) {
+  const toggle = (id) =>
+    onChange(value.includes(id) ? value.filter((d) => d !== id) : [...value, id])
 
+  return (
+    <div className="space-y-2">
+      <MicroLabel text={t.labelDay} />
       <div className="grid grid-cols-2 gap-3">
         {KVK_DAYS.map((day) => {
-          const selected  = value === day.id
-          const dayLabel  = day.id === 'day1' ? t.day1Label : t.day4Label
-          const daySubLbl = day.id === 'day1' ? t.day1Sub   : t.day4Sub
+          const selected   = value.includes(day.id)
+          const dayLabel   = day.id === 'day1' ? t.day1Label : t.day4Label
+          const daySubLbl  = day.id === 'day1' ? t.day1Sub   : t.day4Sub
           return (
-            <button
-              key={day.id}
-              type="button"
-              onClick={() => onChange(day.id)}
-              className="flex flex-col items-center justify-center gap-1.5 py-4 px-3 rounded-2xl transition-all duration-200 active:scale-95 text-center"
+            <button key={day.id} type="button" onClick={() => toggle(day.id)}
+              className="relative flex flex-col items-center justify-center gap-1.5 py-4 px-3 rounded-2xl transition-all duration-200 active:scale-[0.97] text-center overflow-hidden"
               style={selected ? {
-                border:     `1.5px solid ${day.accentBorder}`,
+                border: `1.5px solid ${day.accentBorder}`,
                 background: day.accentBg,
-                boxShadow:  day.accentGlow,
+                boxShadow: day.accentGlow,
               } : {
-                border:     '1.5px solid #1c1f2e',
+                border: '1.5px solid #1c1f2e',
                 background: '#0a0b0f',
-              }}
-            >
+              }}>
+              {/* checkbox pip top-right */}
+              <span className="absolute top-2.5 right-2.5 flex items-center justify-center rounded-full transition-all duration-200"
+                style={{
+                  width: 18, height: 18,
+                  background:  selected ? day.accentBorder : 'transparent',
+                  border:      selected ? 'none' : '1.5px solid #2a2d4a',
+                }}>
+                {selected && (
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </span>
+
               <span style={{ fontSize: 26, lineHeight: 1 }}>{day.emoji}</span>
-              <span
-                className="font-bold text-base leading-tight"
-                style={{ color: selected ? day.accentText : '#6b7280' }}
-              >
+              <span className="font-bold text-base leading-tight"
+                style={{ color: selected ? day.accentText : '#6b7280' }}>
                 {dayLabel}
               </span>
-              <span
-                className="text-xs leading-tight"
-                style={{ color: selected ? day.accentText : '#374151', opacity: selected ? 0.85 : 1 }}
-              >
+              <span className="text-xs leading-snug"
+                style={{ color: selected ? day.accentText : '#374151', opacity: selected ? 0.9 : 1 }}>
                 {daySubLbl}
               </span>
             </button>
           )
         })}
       </div>
-
-      {error && <FieldError msg={error} />}
+      {error && <FieldErr msg={error} />}
     </div>
   )
 }
 
 // ─── TC Level Selector ────────────────────────────────────────────────────────
-function TcLevelSelector({ value, onChange, error, t, isRTL }) {
+function TcLevelSelector({ value, onChange, error, t }) {
   return (
-    <div className="space-y-1.5">
-      <SectionMicroLabel label={t.labelTc} />
-
+    <div className="space-y-2">
+      <MicroLabel text={t.labelTc} />
       <div className="grid grid-cols-3 gap-2">
         {TC_LEVELS.map((lvl) => {
           const isGold    = TC_IS_GOLD(lvl)
           const selected  = value === lvl
-          const accentC   = isGold ? '#f59e0b' : '#4c6ef5'
-          const accentBg  = isGold ? 'rgba(245,158,11,0.14)' : 'rgba(76,110,245,0.14)'
-          const accentGlow = isGold ? '0 0 14px rgba(245,158,11,0.35)' : '0 0 14px rgba(92,124,250,0.35)'
-
+          // accent colours
+          const aC = isGold ? '#f59e0b' : '#4c6ef5'
+          const aBg = isGold ? 'rgba(245,158,11,0.14)' : 'rgba(76,110,245,0.14)'
+          const aGlow = isGold ? '0 0 12px rgba(245,158,11,0.35)' : '0 0 12px rgba(92,124,250,0.35)'
           return (
-            <button
-              key={lvl}
-              type="button"
-              onClick={() => onChange(lvl)}
-              className="py-3 rounded-xl font-bold text-sm transition-all duration-200 active:scale-95 flex flex-col items-center justify-center gap-0.5"
+            <button key={lvl} type="button" onClick={() => onChange(lvl)}
+              className="py-3 rounded-xl font-bold text-sm transition-all duration-200 active:scale-95"
               style={selected ? {
-                border:     `1.5px solid ${accentC}`,
-                background: accentBg,
+                border:     `1.5px solid ${aC}`,
+                background: aBg,
                 color:      isGold ? '#fcd34d' : '#748ffc',
-                boxShadow:  accentGlow,
+                boxShadow:  aGlow,
               } : {
-                border:     `1.5px solid ${isGold ? 'rgba(245,158,11,0.2)' : '#1c1f2e'}`,
+                border:     `1.5px solid ${isGold ? 'rgba(245,158,11,0.22)' : '#1c1f2e'}`,
                 background: isGold ? 'rgba(245,158,11,0.04)' : '#0a0b0f',
-                color:      isGold ? '#78350f' : '#374151',
-              }}
-            >
-              {isGold && <span style={{ fontSize: 11, lineHeight: 1 }}>🪙</span>}
-              <span>{lvl}</span>
+                color:      isGold ? 'rgba(245,158,11,0.55)' : '#374151',
+              }}>
+              {lvl}
             </button>
           )
         })}
       </div>
-
       {/* progression hint */}
-      <p style={{ fontSize: 10, color: '#374151', textAlign: isRTL ? 'right' : 'left' }}>
-        25 → 26 → 27 → 28 → 29 → 30 → 🪙 TG1 → TG2 → TG3
+      <p style={{ fontSize: 10, color: '#2d3748', letterSpacing: '0.02em' }}>
+        25 → 26 → 27 → 28 → 29 → 30 → TG1 → TG2 → TG3
       </p>
+      {error && <FieldErr msg={error} />}
+    </div>
+  )
+}
 
-      {error && <FieldError msg={error} />}
+// ─── Slot Dropdown ────────────────────────────────────────────────────────────
+function SlotSelect({ value, onChange, placeholder, hasError, isRTL }) {
+  return (
+    <div className="relative">
+      <select value={value} onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-xl appearance-none focus:outline-none focus:ring-1 transition-all"
+        style={{
+          background:   '#0a0b0f',
+          border:       `1px solid ${hasError ? '#f43f5e66' : '#1c1f2e'}`,
+          color:        value ? '#f1f5f9' : '#4b5563',
+          padding:      '12px 40px 12px 16px',
+          fontSize:     16,
+          paddingRight: isRTL ? 16 : 40,
+          paddingLeft:  isRTL ? 40 : 16,
+        }}
+        dir="ltr"
+      >
+        <option value="" disabled style={{ background: '#0f1117' }}>{placeholder}</option>
+        {TIME_SLOTS.map((s) => (
+          <option key={s.value} value={s.value} style={{ background: '#0f1117', color: '#f1f5f9' }}>
+            {s.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="absolute top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+        style={{ [isRTL ? 'left' : 'right']: 14, color: '#4b5563' }} />
+    </div>
+  )
+}
+
+// ─── Time Slot Section (dynamic) ─────────────────────────────────────────────
+function TimeSlotSection({ kvkDays, timeSlotDay1, timeSlotDay4, onDay1, onDay4,
+                            errors, t, isRTL }) {
+  const hasDay1 = kvkDays.includes('day1')
+  const hasDay4 = kvkDays.includes('day4')
+  const both    = hasDay1 && hasDay4
+  const day1Cfg = KVK_DAYS.find((d) => d.id === 'day1')
+  const day4Cfg = KVK_DAYS.find((d) => d.id === 'day4')
+
+  if (!hasDay1 && !hasDay4) {
+    return (
+      <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl"
+        style={{ background: '#0a0b0f', border: '1px solid #1c1f2e' }}>
+        <Clock className="w-4 h-4 shrink-0" style={{ color: '#374151' }} />
+        <span style={{ fontSize: 13, color: '#374151' }}>{t.slotHintNone}</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      {both && (
+        <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>{t.slotHintBoth}</p>
+      )}
+
+      {/* Day 1 slot */}
+      {hasDay1 && (
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: 13 }}>{day1Cfg.emoji}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: both ? '#748ffc' : '#6b7280',
+                           textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              {both ? `${t.day1Label} — ${t.labelSlot}` : t.labelSlot}
+            </span>
+          </div>
+          <SlotSelect
+            value={timeSlotDay1}
+            onChange={onDay1}
+            placeholder={t.placeholderSlot}
+            hasError={!!errors.timeSlotDay1}
+            isRTL={isRTL}
+          />
+          {errors.timeSlotDay1 && <FieldErr msg={errors.timeSlotDay1} />}
+        </div>
+      )}
+
+      {/* Day 4 slot */}
+      {hasDay4 && (
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: 13 }}>{day4Cfg.emoji}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: both ? '#fcd34d' : '#6b7280',
+                           textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              {both ? `${t.day4Label} — ${t.labelSlot}` : t.labelSlot}
+            </span>
+          </div>
+          <SlotSelect
+            value={timeSlotDay4}
+            onChange={onDay4}
+            placeholder={t.placeholderSlot}
+            hasError={!!errors.timeSlotDay4}
+            isRTL={isRTL}
+          />
+          {errors.timeSlotDay4 && <FieldErr msg={errors.timeSlotDay4} />}
+        </div>
+      )}
     </div>
   )
 }
@@ -453,18 +542,15 @@ function SpeedupRow({ icon, label, days, hours, onDays, onHours, t, isRTL }) {
           <Minus className="w-4 h-4" />
         </button>
         <div className="flex flex-col items-center justify-center flex-1 gap-0.5 py-1.5">
-          <input
-            type="number" inputMode="numeric"
-            value={raw}
+          <input type="number" inputMode="numeric" value={raw}
             onFocus={(e) => e.target.select()}
             onChange={(e) => setRaw(e.target.value)}
             onBlur={(e) => commit(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') commit(raw) }}
             className="w-full text-center bg-transparent text-white font-bold focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            style={{ fontSize: 22, lineHeight: 1 }}
-            min={0} max={max}
-          />
-          <span style={{ fontSize: 10, color: '#4b5563', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            style={{ fontSize: 22, lineHeight: 1 }} min={0} max={max} />
+          <span style={{ fontSize: 10, color: '#4b5563', fontWeight: 700,
+                         textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             {unitLabel}
           </span>
         </div>
@@ -481,7 +567,8 @@ function SpeedupRow({ icon, label, days, hours, onDays, onHours, t, isRTL }) {
     <div className="space-y-2">
       <div className="flex items-center gap-2" style={{ flexDirection: isRTL ? 'row-reverse' : 'row' }}>
         <span style={{ color: '#374151' }}>{icon}</span>
-        <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280',
+                       textTransform: 'uppercase', letterSpacing: '0.07em' }}>
           {label}
         </span>
         {(days > 0 || hours > 0) && (
@@ -501,23 +588,20 @@ function SpeedupRow({ icon, label, days, hours, onDays, onHours, t, isRTL }) {
   )
 }
 
-// ─── Shared small atoms ───────────────────────────────────────────────────────
-function SectionMicroLabel({ label, icon, isRTL }) {
+// ─── Shared atoms ─────────────────────────────────────────────────────────────
+function MicroLabel({ text }) {
   return (
-    <div className="flex items-center gap-1.5 mb-1" style={{ flexDirection: isRTL ? 'row-reverse' : 'row' }}>
-      {icon && <span style={{ color: '#374151' }}>{icon}</span>}
-      <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-        {label}
-      </span>
-    </div>
+    <p style={{ fontSize: 11, fontWeight: 700, color: '#6b7280',
+                textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 2 }}>
+      {text}
+    </p>
   )
 }
 
-function FieldError({ msg }) {
+function FieldErr({ msg }) {
   return (
     <p className="flex items-center gap-1 text-xs" style={{ color: '#f43f5e', animation: 'fadeIn 0.2s ease-out' }}>
-      <AlertCircle className="w-3 h-3 shrink-0" />
-      {msg}
+      <AlertCircle className="w-3 h-3 shrink-0" />{msg}
     </p>
   )
 }
@@ -526,8 +610,8 @@ function Divider({ label }) {
   return (
     <div className="flex items-center gap-3 py-0.5">
       <div className="flex-1 h-px" style={{ background: '#1c1f2e' }} />
-      <span style={{ fontSize: 10, fontWeight: 800, color: '#374151', textTransform: 'uppercase',
-                     letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>
+      <span style={{ fontSize: 10, fontWeight: 800, color: '#374151',
+                     textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>
         {label}
       </span>
       <div className="flex-1 h-px" style={{ background: '#1c1f2e' }} />
@@ -538,9 +622,14 @@ function Divider({ label }) {
 function Field({ label, icon, error, isRTL, children }) {
   return (
     <div className="space-y-1.5">
-      {label && <SectionMicroLabel label={label} icon={icon} isRTL={isRTL} />}
+      {label && (
+        <div className="flex items-center gap-1.5" style={{ flexDirection: isRTL ? 'row-reverse' : 'row' }}>
+          {icon && <span style={{ color: '#374151' }}>{icon}</span>}
+          <MicroLabel text={label} />
+        </div>
+      )}
       {children}
-      {error && <FieldError msg={error} />}
+      {error && <FieldErr msg={error} />}
     </div>
   )
 }
@@ -550,11 +639,6 @@ const inputStyle = (hasError) => ({
   border: `1px solid ${hasError ? '#f43f5e66' : '#1c1f2e'}`,
   outline: 'none',
 })
-
-const inputCls = (hasError) =>
-  `w-full rounded-xl px-4 py-3.5 text-sm text-gray-100 placeholder-gray-600 transition-all duration-200 focus:outline-none${
-    hasError ? ' focus:ring-1' : ' focus:ring-1'
-  }`
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({ toast, onDismiss }) {
@@ -570,14 +654,12 @@ function Toast({ toast, onDismiss }) {
     <div className="fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm"
       style={{ transform: 'translateX(-50%)', animation: 'toastIn 0.4s cubic-bezier(0.34,1.56,0.64,1)' }}>
       <div className="flex items-start gap-3 p-4 rounded-2xl backdrop-blur-xl"
-        style={{
-          background: ok ? 'rgba(6,78,59,0.92)' : 'rgba(69,10,10,0.92)',
-          border: `1px solid ${ok ? 'rgba(16,185,129,0.4)' : 'rgba(244,63,94,0.4)'}`,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-        }}>
+        style={{ background: ok ? 'rgba(6,78,59,0.92)' : 'rgba(69,10,10,0.92)',
+                 border: `1px solid ${ok ? 'rgba(16,185,129,0.4)' : 'rgba(244,63,94,0.4)'}`,
+                 boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
         {ok
           ? <CheckCircle2 className="w-5 h-5 mt-0.5 shrink-0" style={{ color: '#6ee7b7' }} />
-          : <XCircle     className="w-5 h-5 mt-0.5 shrink-0" style={{ color: '#fda4af' }} />}
+          : <XCircle      className="w-5 h-5 mt-0.5 shrink-0" style={{ color: '#fda4af' }} />}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-100">{toast.title}</p>
           {toast.msg && <p className="text-xs text-gray-400 mt-0.5">{toast.msg}</p>}
@@ -593,71 +675,91 @@ function Toast({ toast, onDismiss }) {
 // ─── Success Modal ────────────────────────────────────────────────────────────
 function SuccessModal({ data, t, onClose }) {
   if (!data) return null
-  const s = ALLIANCE_STYLES[data.alliance] || {}
-  const day = KVK_DAYS.find((d) => d.id === data.kvkDay)
+  const s      = ALLIANCE_STYLES[data.alliance] || {}
+  const both   = data.kvkDays.includes('day1') && data.kvkDays.includes('day4')
+  const day1Cfg = KVK_DAYS.find((d) => d.id === 'day1')
+  const day4Cfg = KVK_DAYS.find((d) => d.id === 'day4')
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-5"
-      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(12px)', animation: 'fadeIn 0.2s ease-out' }}>
+      style={{ background: 'rgba(0,0,0,0.76)', backdropFilter: 'blur(12px)', animation: 'fadeIn 0.2s ease-out' }}>
       <div className="w-full overflow-hidden"
         style={{ maxWidth: 370, background: '#0f1117', border: '1px solid #1c1f2e',
                  borderRadius: 22, boxShadow: '0 24px 64px rgba(0,0,0,0.7)', animation: 'slideUp 0.35s ease-out' }}>
-        {/* top bar */}
         <div className="h-1" style={{ background: 'linear-gradient(90deg,#4c6ef5,#748ffc,transparent)' }} />
-
         <div className="p-6 flex flex-col items-center gap-5 text-center">
-          {/* check icon */}
-          <div className="w-18 h-18 rounded-full flex items-center justify-center"
+          <div className="flex items-center justify-center rounded-full"
             style={{ width: 72, height: 72, background: 'rgba(76,110,245,0.12)',
                      border: '1px solid rgba(76,110,245,0.3)',
                      boxShadow: '0 0 40px rgba(92,124,250,0.25)', animation: 'subtleGlow 3s ease-in-out infinite' }}>
             <CheckCircle2 className="w-9 h-9" style={{ color: '#748ffc' }} />
           </div>
-
           <div>
             <h2 className="text-xl font-bold text-white">{t.successTitle}</h2>
             <p className="text-sm text-gray-500 mt-1 leading-relaxed">{t.successMsg}</p>
           </div>
 
-          {/* summary */}
           <div className="w-full rounded-xl p-4 space-y-3 text-left"
             style={{ background: '#12141c', border: '1px solid #1c1f2e' }}>
+            {/* Commander */}
             <SRow label={t.rowCommander} value={data.playerName} />
-            <SRow label={t.rowAlliance}
-              value={
-                <span className="font-bold px-2 py-0.5 rounded-lg text-xs uppercase tracking-widest"
-                  style={{ color: s.text, background: s.bg, border: `1px solid ${s.border}` }}>
-                  {data.alliance}
+            {/* Alliance */}
+            <SRow label={t.rowAlliance} value={
+              <span className="font-bold px-2 py-0.5 rounded-lg text-xs uppercase tracking-widest"
+                style={{ color: s.text, background: s.bg, border: `1px solid ${s.border}` }}>
+                {data.alliance}
+              </span>
+            } />
+            {/* TC Level */}
+            {data.tcLevel && (
+              <SRow label={t.rowTc} value={
+                <span className="font-bold px-2 py-0.5 rounded-lg text-xs"
+                  style={TC_IS_GOLD(data.tcLevel)
+                    ? { color:'#fcd34d', background:'rgba(245,158,11,0.14)', border:'1px solid rgba(245,158,11,0.3)' }
+                    : { color:'#748ffc', background:'rgba(76,110,245,0.14)', border:'1px solid rgba(76,110,245,0.3)' }}>
+                  {data.tcLevel}
                 </span>
               } />
-            {data.kvkDay && (
-              <SRow label={t.rowDay}
-                value={
+            )}
+            {/* Time slots */}
+            {!both && data.kvkDays.includes('day1') && (
+              <SRow label={t.rowSlot} value={
+                <span className="flex items-center gap-1.5 justify-end">
+                  <span>{day1Cfg.emoji}</span>
+                  <span style={{ color: '#fbbf24' }}>{getSlotLabel(data.timeSlotDay1)}</span>
+                </span>
+              } />
+            )}
+            {!both && data.kvkDays.includes('day4') && (
+              <SRow label={t.rowSlot} value={
+                <span className="flex items-center gap-1.5 justify-end">
+                  <span>{day4Cfg.emoji}</span>
+                  <span style={{ color: '#fbbf24' }}>{getSlotLabel(data.timeSlotDay4)}</span>
+                </span>
+              } />
+            )}
+            {both && (
+              <>
+                <SRow label={t.rowSlotDay1} value={
                   <span className="flex items-center gap-1.5 justify-end">
-                    <span>{day?.emoji}</span>
-                    <span style={{ color: day?.accentText, fontWeight: 600 }}>
-                      {getKvkLabel(data.kvkDay, t)}
-                    </span>
+                    <span>{day1Cfg.emoji}</span>
+                    <span style={{ color: '#748ffc' }}>{getSlotLabel(data.timeSlotDay1)}</span>
                   </span>
                 } />
-            )}
-            {data.tcLevel && (
-              <SRow label={t.rowTc}
-                value={
-                  <span className="font-bold px-2 py-0.5 rounded-lg text-xs"
-                    style={TC_IS_GOLD(data.tcLevel)
-                      ? { color: '#fcd34d', background: 'rgba(245,158,11,0.14)', border: '1px solid rgba(245,158,11,0.3)' }
-                      : { color: '#748ffc', background: 'rgba(76,110,245,0.14)', border: '1px solid rgba(76,110,245,0.3)' }}>
-                    {TC_IS_GOLD(data.tcLevel) ? `🪙 ${data.tcLevel}` : data.tcLevel}
+                <SRow label={t.rowSlotDay4} value={
+                  <span className="flex items-center gap-1.5 justify-end">
+                    <span>{day4Cfg.emoji}</span>
+                    <span style={{ color: '#fcd34d' }}>{getSlotLabel(data.timeSlotDay4)}</span>
                   </span>
                 } />
+              </>
             )}
-            <SRow label={t.rowSlot} value={getSlotLabel(data.timeSlot)} accent />
           </div>
 
           <button onClick={onClose}
             className="w-full py-3.5 rounded-xl font-bold text-white text-sm transition-all active:scale-95"
-            style={{ background: 'linear-gradient(135deg,#4c6ef5,#5c7cfa)', boxShadow: '0 0 24px rgba(92,124,250,0.35)' }}>
+            style={{ background: 'linear-gradient(135deg,#4c6ef5,#5c7cfa)',
+                     boxShadow: '0 0 24px rgba(92,124,250,0.35)' }}>
             {t.successClose}
           </button>
         </div>
@@ -666,15 +768,14 @@ function SuccessModal({ data, t, onClose }) {
   )
 }
 
-function SRow({ label, value, accent }) {
+function SRow({ label, value }) {
   return (
     <div className="flex items-center justify-between gap-3 min-h-[22px]">
       <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280',
                      textTransform: 'uppercase', letterSpacing: '0.07em', flexShrink: 0 }}>
         {label}
       </span>
-      <span className="text-sm font-semibold text-right"
-        style={{ color: accent ? '#fbbf24' : '#e2e8f0' }}>
+      <span className="text-sm font-semibold text-right" style={{ color: '#e2e8f0' }}>
         {value || '—'}
       </span>
     </div>
@@ -683,19 +784,18 @@ function SRow({ label, value, accent }) {
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [lang, setLang]       = useState('en')
-  const [form, setForm]       = useState(INITIAL_FORM)
-  const [errors, setErrors]   = useState({})
-  const [submitting, setSub]  = useState(false)
-  const [toast, setToast]     = useState(null)
-  const [successData, setOk]  = useState(null)
+  const [lang, setLang]     = useState('en')
+  const [form, setForm]     = useState(INITIAL_FORM)
+  const [errors, setErrors] = useState({})
+  const [submitting, setSub] = useState(false)
+  const [toast, setToast]   = useState(null)
+  const [successData, setOk] = useState(null)
 
   const t     = T[lang]
   const isRTL = lang === 'ar'
 
   const showToast = useCallback((type, title, msg) => setToast({ type, title, msg }), [])
 
-  // generic setter that also clears the field's error
   const set = (field) => (val) => {
     setForm((p) => ({ ...p, [field]: val }))
     setErrors((p) => ({ ...p, [field]: null }))
@@ -704,30 +804,50 @@ export default function App() {
 
   const validate = () => {
     const e = {}
-    if (!form.playerName.trim()) e.playerName = t.errName
-    if (!form.alliance)          e.alliance   = t.errAlliance
-    if (!form.kvkDay)            e.kvkDay     = t.errDay
-    if (!form.tcLevel)           e.tcLevel    = t.errTc
-    if (!form.timeSlot)          e.timeSlot   = t.errSlot
+    if (!form.playerName.trim())      e.playerName   = t.errName
+    if (!form.alliance)               e.alliance     = t.errAlliance
+    if (form.kvkDays.length === 0)    e.kvkDays      = t.errDay
+    if (!form.tcLevel)                e.tcLevel      = t.errTc
+    if (form.kvkDays.includes('day1') && !form.timeSlotDay1) e.timeSlotDay1 = t.errSlot
+    if (form.kvkDays.includes('day4') && !form.timeSlotDay4) e.timeSlotDay4 = t.errSlot
     return e
   }
 
   const buildPayload = (f) => {
-    const tcDisplay = TC_IS_GOLD(f.tcLevel) ? `🪙 ${f.tcLevel}` : `TC ${f.tcLevel}`
+    const both    = f.kvkDays.includes('day1') && f.kvkDays.includes('day4')
+    const only1   = f.kvkDays.includes('day1') && !both
+    const only4   = f.kvkDays.includes('day4') && !both
+    const tcDisplay = TC_IS_GOLD(f.tcLevel) ? `${f.tcLevel}` : `TC ${f.tcLevel}`
+
+    // Build the day+slot fields
+    const daySlotFields = []
+    if (only1) {
+      daySlotFields.push({ name: '📅 KvK Day',         value: getKvkLabel('day1', t),        inline: true })
+      daySlotFields.push({ name: '🕐 Time Slot (UTC)',  value: getSlotLabel(f.timeSlotDay1),  inline: true })
+      daySlotFields.push({ name: '\u200b',              value: '\u200b',                      inline: true })
+    } else if (only4) {
+      daySlotFields.push({ name: '📅 KvK Day',         value: getKvkLabel('day4', t),        inline: true })
+      daySlotFields.push({ name: '🕐 Time Slot (UTC)',  value: getSlotLabel(f.timeSlotDay4),  inline: true })
+      daySlotFields.push({ name: '\u200b',              value: '\u200b',                      inline: true })
+    } else if (both) {
+      daySlotFields.push({ name: '⚒️ Day 1 Slot (UTC)', value: getSlotLabel(f.timeSlotDay1), inline: true })
+      daySlotFields.push({ name: '⚔️ Day 4 Slot (UTC)', value: getSlotLabel(f.timeSlotDay4), inline: true })
+      daySlotFields.push({ name: '\u200b',               value: '\u200b',                    inline: true })
+    }
+
     return {
       username: '2323 KvK Ministry Bot',
       embeds: [{
         author: { name: '2323 KvK · Ministry Appointment Booking' },
-        title: '⚔️ Ministry Appointment Request',
-        color: 0x5c7cfa,
+        title:  '⚔️ Ministry Appointment Request',
+        color:  0x5c7cfa,
         fields: [
-          { name: '👤 Commander',       value: f.playerName,             inline: true  },
-          { name: '🛡️ Alliance',        value: f.alliance,               inline: true  },
-          { name: '\u200b',             value: '\u200b',                 inline: true  },
-          { name: '📅 KvK Day',         value: getKvkLabel(f.kvkDay, t), inline: true  },
-          { name: '🏰 TC Level',        value: tcDisplay,                inline: true  },
-          { name: '\u200b',             value: '\u200b',                 inline: true  },
-          { name: '🕐 Time Slot (UTC)', value: getSlotLabel(f.timeSlot), inline: false },
+          { name: '👤 Commander', value: f.playerName, inline: true },
+          { name: '🛡️ Alliance',  value: f.alliance,   inline: true },
+          { name: '\u200b',       value: '\u200b',     inline: true },
+          { name: '🏰 TC Level',  value: tcDisplay,    inline: true },
+          { name: '\u200b',       value: '\u200b',     inline: false },
+          ...daySlotFields,
           ...(fmtSpeedups(f.constructionDays, f.constructionHours)
               ? [{ name: '🔨 Construction', value: fmtSpeedups(f.constructionDays, f.constructionHours), inline: true }] : []),
           ...(fmtSpeedups(f.researchDays, f.researchHours)
@@ -792,7 +912,7 @@ export default function App() {
       <div dir={isRTL ? 'rtl' : 'ltr'}
         className="min-h-screen flex flex-col items-center justify-start px-4 py-8 sm:py-12">
 
-        {/* ── Brand ── */}
+        {/* Brand */}
         <div className="w-full text-center mb-6" style={{ maxWidth: 650, animation: 'slideUp 0.35s ease-out' }}>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-3"
             style={{ background: 'rgba(76,110,245,0.1)', border: '1px solid rgba(76,110,245,0.22)' }}>
@@ -803,8 +923,7 @@ export default function App() {
             </span>
           </div>
           <h1 className="font-bold tracking-tight leading-none mb-1"
-            style={{ fontFamily: "'Rajdhani', sans-serif",
-                     fontSize: 'clamp(2rem, 8vw, 2.75rem)',
+            style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 'clamp(2rem,8vw,2.75rem)',
                      background: 'linear-gradient(135deg,#748ffc 0%,#5c7cfa 50%,#91a7ff 100%)',
                      WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             2323 KvK
@@ -812,15 +931,14 @@ export default function App() {
           <p style={{ color: '#9ca3af', fontWeight: 500, fontSize: '1rem' }}>{t.subtitle}</p>
         </div>
 
-        {/* ── Card ── */}
+        {/* Card */}
         <div className="w-full overflow-hidden"
           style={{ maxWidth: 650, background: '#0f1117', borderRadius: 22,
                    animation: 'slideUp 0.4s ease-out, cardGlow 5s ease-in-out infinite' }}>
-          {/* top gradient bar */}
           <div className="h-0.5 w-full"
             style={{ background: 'linear-gradient(90deg,#4c6ef5 0%,#748ffc 60%,transparent 100%)' }} />
 
-          {/* card header */}
+          {/* Card header */}
           <div className="flex items-center justify-between px-5 py-3"
             style={{ borderBottom: '1px solid #1c1f2e', background: 'rgba(18,20,28,0.5)' }}>
             <div className="flex items-center gap-2">
@@ -835,23 +953,16 @@ export default function App() {
 
           <form onSubmit={handleSubmit} noValidate className="p-5 sm:p-6 space-y-5">
 
-            {/* ── 1. Player Details ── */}
+            {/* 1 ── Player Details */}
             <div className="space-y-4">
               <Divider label={t.secPlayer} />
-
               <Field label={t.labelName} icon={<User className="w-3.5 h-3.5" />}
                 error={errors.playerName} isRTL={isRTL}>
-                <input
-                  type="text"
-                  value={form.playerName}
-                  onChange={setField('playerName')}
-                  placeholder={t.placeholderName}
-                  dir={isRTL ? 'rtl' : 'ltr'}
-                  className={inputCls(errors.playerName)}
-                  style={inputStyle(errors.playerName)}
-                />
+                <input type="text" value={form.playerName} onChange={setField('playerName')}
+                  placeholder={t.placeholderName} dir={isRTL ? 'rtl' : 'ltr'}
+                  className="w-full rounded-xl px-4 py-3.5 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:ring-1 transition-all"
+                  style={inputStyle(errors.playerName)} />
               </Field>
-
               <Field label={t.labelAlliance} icon={<Shield className="w-3.5 h-3.5" />}
                 error={errors.alliance} isRTL={isRTL}>
                 <div className="grid grid-cols-4 gap-2.5">
@@ -872,19 +983,18 @@ export default function App() {
               </Field>
             </div>
 
-            {/* ── 2. KvK Prep Day ── */}
+            {/* 2 ── KvK Prep Day (multi-select) */}
             <div className="space-y-3">
               <Divider label={t.secDay} />
               <KvkDaySelector
-                value={form.kvkDay}
-                onChange={set('kvkDay')}
-                error={errors.kvkDay}
+                value={form.kvkDays}
+                onChange={set('kvkDays')}
+                error={errors.kvkDays}
                 t={t}
-                isRTL={isRTL}
               />
             </div>
 
-            {/* ── 3. Town Center Level ── */}
+            {/* 3 ── Town Center Level */}
             <div className="space-y-3">
               <Divider label={t.secTc} />
               <TcLevelSelector
@@ -892,101 +1002,56 @@ export default function App() {
                 onChange={set('tcLevel')}
                 error={errors.tcLevel}
                 t={t}
+              />
+            </div>
+
+            {/* 4 ── Speedups & Resources */}
+            <div className="space-y-4">
+              <Divider label={t.secSpeedups} />
+              <SpeedupRow icon={<Hammer className="w-3.5 h-3.5" />} label={t.labelConstruction}
+                days={form.constructionDays} hours={form.constructionHours}
+                onDays={set('constructionDays')} onHours={set('constructionHours')}
+                t={t} isRTL={isRTL} />
+              <SpeedupRow icon={<FlaskConical className="w-3.5 h-3.5" />} label={t.labelResearch}
+                days={form.researchDays} hours={form.researchHours}
+                onDays={set('researchDays')} onHours={set('researchHours')}
+                t={t} isRTL={isRTL} />
+              <SpeedupRow icon={<Sword className="w-3.5 h-3.5" />} label={t.labelTraining}
+                days={form.trainingDays} hours={form.trainingHours}
+                onDays={set('trainingDays')} onHours={set('trainingHours')}
+                t={t} isRTL={isRTL} />
+              <Field label={t.labelGold} icon={<Coins className="w-3.5 h-3.5" />} isRTL={isRTL}>
+                <input type="number" inputMode="numeric" min="0" value={form.trueGold}
+                  onChange={setField('trueGold')} placeholder={t.placeholderGold} dir="ltr"
+                  className="w-full rounded-xl px-4 py-3.5 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:ring-1 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  style={{ ...inputStyle(false), textAlign: isRTL ? 'right' : 'left' }} />
+              </Field>
+            </div>
+
+            {/* 5 ── Time Slot (dynamic per day) */}
+            <div className="space-y-3">
+              <Divider label={t.secSlot} />
+              <TimeSlotSection
+                kvkDays={form.kvkDays}
+                timeSlotDay1={form.timeSlotDay1}
+                timeSlotDay4={form.timeSlotDay4}
+                onDay1={set('timeSlotDay1')}
+                onDay4={set('timeSlotDay4')}
+                errors={errors}
+                t={t}
                 isRTL={isRTL}
               />
             </div>
 
-            {/* ── 4. Speedups & Resources ── */}
-            <div className="space-y-4">
-              <Divider label={t.secSpeedups} />
-
-              <SpeedupRow
-                icon={<Hammer className="w-3.5 h-3.5" />}
-                label={t.labelConstruction}
-                days={form.constructionDays} hours={form.constructionHours}
-                onDays={set('constructionDays')} onHours={set('constructionHours')}
-                t={t} isRTL={isRTL}
-              />
-              <SpeedupRow
-                icon={<FlaskConical className="w-3.5 h-3.5" />}
-                label={t.labelResearch}
-                days={form.researchDays} hours={form.researchHours}
-                onDays={set('researchDays')} onHours={set('researchHours')}
-                t={t} isRTL={isRTL}
-              />
-              <SpeedupRow
-                icon={<Sword className="w-3.5 h-3.5" />}
-                label={t.labelTraining}
-                days={form.trainingDays} hours={form.trainingHours}
-                onDays={set('trainingDays')} onHours={set('trainingHours')}
-                t={t} isRTL={isRTL}
-              />
-
-              <Field label={t.labelGold} icon={<Coins className="w-3.5 h-3.5" />} isRTL={isRTL}>
-                <input
-                  type="number" inputMode="numeric" min="0"
-                  value={form.trueGold}
-                  onChange={setField('trueGold')}
-                  placeholder={t.placeholderGold}
-                  dir="ltr"
-                  className={`${inputCls(false)} [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
-                  style={{ ...inputStyle(false), textAlign: isRTL ? 'right' : 'left' }}
-                />
-              </Field>
-            </div>
-
-            {/* ── 5. Time Slot ── */}
-            <div className="space-y-3">
-              <Divider label={t.secSlot} />
-
-              <Field label={t.labelSlot} icon={<Clock className="w-3.5 h-3.5" />}
-                error={errors.timeSlot} isRTL={isRTL}>
-                <div className="relative">
-                  <select
-                    value={form.timeSlot}
-                    onChange={setField('timeSlot')}
-                    className={`${inputCls(errors.timeSlot)} appearance-none`}
-                    style={{
-                      ...inputStyle(errors.timeSlot),
-                      color:        form.timeSlot ? '#f1f5f9' : '#4b5563',
-                      paddingRight: isRTL ? 16 : 40,
-                      paddingLeft:  isRTL ? 40 : 16,
-                    }}
-                    dir="ltr"
-                  >
-                    <option value="" disabled style={{ background: '#0f1117' }}>{t.placeholderSlot}</option>
-                    {TIME_SLOTS.map((s) => (
-                      <option key={s.value} value={s.value} style={{ background: '#0f1117', color: '#f1f5f9' }}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                    style={{ [isRTL ? 'left' : 'right']: 14, color: '#4b5563' }} />
-                </div>
-              </Field>
-            </div>
-
-            {/* ── Submit ── */}
-            <button
-              type="submit"
-              disabled={submitting}
+            {/* Submit */}
+            <button type="submit" disabled={submitting}
               className="w-full flex items-center justify-center gap-2.5 rounded-2xl font-bold text-white transition-all duration-200 active:scale-[0.98] disabled:opacity-55 disabled:cursor-not-allowed"
-              style={{
-                padding:    '16px 24px',
-                fontSize:   15,
-                background: submitting
-                  ? '#1c1f2e'
-                  : 'linear-gradient(135deg,#4c6ef5 0%,#5c7cfa 60%,#748ffc 100%)',
-                boxShadow: submitting
-                  ? 'none'
-                  : '0 0 36px rgba(92,124,250,0.4),0 4px 20px rgba(92,124,250,0.25)',
-              }}
-            >
+              style={{ padding: '16px 24px', fontSize: 15,
+                       background: submitting ? '#1c1f2e' : 'linear-gradient(135deg,#4c6ef5 0%,#5c7cfa 60%,#748ffc 100%)',
+                       boxShadow: submitting ? 'none' : '0 0 36px rgba(92,124,250,0.4),0 4px 20px rgba(92,124,250,0.25)' }}>
               {submitting
                 ? <><Loader2 className="w-5 h-5 animate-spin" />{t.btnSubmitting}</>
-                : <><Send    className="w-5 h-5" />{t.btnSubmit}</>
-              }
+                : <><Send    className="w-5 h-5" />{t.btnSubmit}</>}
             </button>
 
           </form>
