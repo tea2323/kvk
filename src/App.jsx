@@ -5,7 +5,6 @@ import {
   Sparkles, X, User, ChevronDown, Globe, Plus, Minus
 } from 'lucide-react'
 import { supabase } from './lib/supabase.js'
-import { calculateRoiScore } from './lib/roi.js'
 
 // ─── Hardcoded Discord Webhook ────────────────────────────────────────────────
 const DISCORD_WEBHOOK_URL =
@@ -886,11 +885,11 @@ export default function App() {
         setErrors({})
 
         // ── Background Supabase save (non-blocking) ──────────────────────────
-        const snap = { ...form }                     // capture before state clears
+        const snap = { ...form }  // capture before React state clears
         supabase.from('kvk_appointments').insert([{
           player_name:        snap.playerName,
           alliance:           snap.alliance,
-          kvk_days:           snap.kvkDays,
+          selected_days:      snap.kvkDays,            // DB col: selected_days
           tc_level:           snap.tcLevel,
           construction_days:  snap.constructionDays,
           construction_hours: snap.constructionHours,
@@ -898,12 +897,21 @@ export default function App() {
           research_hours:     snap.researchHours,
           training_days:      snap.trainingDays,
           training_hours:     snap.trainingHours,
-          true_gold:          parseInt(snap.trueGold) || 0,
+          true_gold_count:    parseInt(snap.trueGold) || 0, // DB col: true_gold_count
           time_slot_day1:     snap.timeSlotDay1 || null,
           time_slot_day4:     snap.timeSlotDay4 || null,
-          roi_score:          calculateRoiScore(snap),
+          // roi_score not in table — computed client-side in Admin
         }]).then(({ error }) => {
-          if (error) console.warn('[Supabase insert]', error.message)
+          if (error) {
+            console.error('[Supabase insert FAILED]', {
+              code:    error.code,
+              message: error.message,
+              details: error.details,
+              hint:    error.hint,
+            })
+          } else {
+            console.log('[Supabase] ✅ Appointment saved')
+          }
         })
         // ────────────────────────────────────────────────────────────────────
       } else {
