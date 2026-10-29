@@ -22,7 +22,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     created_at         TIMESTAMPTZ DEFAULT NOW(),
     player_name        TEXT        NOT NULL,
     alliance           TEXT        NOT NULL,
-    selected_days      TEXT[]      NOT NULL DEFAULT '{}',   -- was kvk_days
+    selected_days      TEXT[]      NOT NULL DEFAULT '{}',
     tc_level           TEXT        NOT NULL,
     construction_days  INTEGER     DEFAULT 0,
     construction_hours INTEGER     DEFAULT 0,
@@ -30,17 +30,26 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     research_hours     INTEGER     DEFAULT 0,
     training_days      INTEGER     DEFAULT 0,
     training_hours     INTEGER     DEFAULT 0,
-    true_gold_count    INTEGER     DEFAULT 0,               -- was true_gold
+    true_gold_count    INTEGER     DEFAULT 0,
     time_slot_day1     TEXT,
     time_slot_day4     TEXT
-    -- roi_score is computed client-side; not stored
   );
 
   ALTER TABLE kvk_appointments ENABLE ROW LEVEL SECURITY;
 
+  -- Booking form: insert
   CREATE POLICY "public_insert" ON kvk_appointments
     FOR INSERT WITH CHECK (true);
 
+  -- Admin dashboard: read
   CREATE POLICY "public_select" ON kvk_appointments
     FOR SELECT USING (true);
+
+  -- Admin dashboard: edit  ← required for Edit feature
+  CREATE POLICY "public_update" ON kvk_appointments
+    FOR UPDATE USING (true) WITH CHECK (true);
+
+  -- Admin dashboard: delete  ← required for Delete feature
+  CREATE POLICY "public_delete" ON kvk_appointments
+    FOR DELETE USING (true);
 */
