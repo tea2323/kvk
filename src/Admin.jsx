@@ -472,6 +472,8 @@ function SlotCoverageVisualizer({
   selectedSlotFilter,
   setSelectedSlotFilter,
   onOpenReassign,
+  onSharePublic,
+  onPreviewPublic,
 }) {
   const [hoveredData, setHoveredData] = useState(null)
 
@@ -628,6 +630,24 @@ function SlotCoverageVisualizer({
                 {unclaimedSlots}
               </span>
             )}
+          </button>
+
+          {/* Share Public Link & Preview */}
+          <button
+            onClick={onSharePublic}
+            title="Copy public read-only schedule URL to clipboard"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-sans text-xs font-semibold tracking-tight transition-all active:scale-95 bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/35 text-indigo-300">
+            <Share2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Share Schedule</span>
+            <span className="sm:hidden">Share</span>
+          </button>
+
+          <button
+            onClick={onPreviewPublic}
+            title="Open public schedule page in a new tab"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-sans text-xs font-semibold tracking-tight transition-all active:scale-95 bg-[#0a0b0f] hover:bg-[#12141c] border border-[#1c1f2e] text-slate-400 hover:text-white">
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Preview</span>
           </button>
         </div>
       </div>
@@ -1537,6 +1557,29 @@ export default function Admin() {
 
   const activeUnclaimedCount = activeDay === 'day1' ? (48 - d1CoveredCount) : (48 - d4CoveredCount)
 
+  const handleSharePublic = async () => {
+    const publicUrl = `${window.location.origin}${window.location.pathname}#/schedule`
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(publicUrl)
+      } else {
+        const input = document.createElement('input')
+        input.value = publicUrl
+        document.body.appendChild(input)
+        input.select()
+        document.execCommand('copy')
+        document.body.removeChild(input)
+      }
+      showToast('success', '🔗 Public schedule link copied! Share with your alliance.')
+    } catch {
+      showToast('info', `Public link: ${publicUrl}`)
+    }
+  }
+
+  const handlePreviewPublic = () => {
+    window.open('#/schedule', '_blank')
+  }
+
   const Th = ({ col, children, right }) => (
     <th onClick={() => toggleSort(col)} className="select-none cursor-pointer whitespace-nowrap"
       style={{ padding:'10px 14px', textAlign:right?'right':'left', fontSize:11, fontWeight:700,
@@ -1607,6 +1650,13 @@ export default function Admin() {
             onMouseOver={e=>{e.currentTarget.style.background='rgba(16,185,129,0.2)';e.currentTarget.style.borderColor='rgba(16,185,129,0.5)'}}
             onMouseOut={e =>{e.currentTarget.style.background='rgba(16,185,129,0.12)';e.currentTarget.style.borderColor='rgba(16,185,129,0.3)'}}>
             <UserPlus className="w-3.5 h-3.5" /><span className="hidden sm:inline">Add Player</span>
+          </button>
+
+          {/* Share Public Link — indigo */}
+          <button onClick={handleSharePublic}
+            title="Copy public read-only schedule URL"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-xs font-semibold tracking-tight transition-all active:scale-95 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300">
+            <Share2 className="w-3.5 h-3.5" /><span className="hidden sm:inline">Share Link</span>
           </button>
 
           {/* Export CSV — indigo */}
@@ -1686,6 +1736,8 @@ export default function Admin() {
             selectedSlotFilter={selectedSlotFilter}
             setSelectedSlotFilter={setSelectedSlotFilter}
             onOpenReassign={(slot) => setReassignTarget({ slot, day: activeDay })}
+            onSharePublic={handleSharePublic}
+            onPreviewPublic={handlePreviewPublic}
           />
 
           {/* Active Slot Filter Banner (when table is synchronized to a clicked slot) */}

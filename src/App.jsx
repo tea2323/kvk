@@ -970,6 +970,15 @@ export default function App() {
             2323 KvK
           </h1>
           <p style={{ color: '#9ca3af', fontWeight: 500, fontSize: '1rem' }}>{t.subtitle}</p>
+          <div className="mt-2.5">
+            <a
+              href="#/schedule"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-sans font-semibold text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 transition-all">
+              <Clock className="w-3.5 h-3.5 text-indigo-400" />
+              <span>View Live Schedule & Free Slots</span>
+              <span>&rarr;</span>
+            </a>
+          </div>
         </div>
 
         {/* Card */}
