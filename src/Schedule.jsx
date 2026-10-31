@@ -67,14 +67,16 @@ function TcBadge({ level }) {
 
 function StatCard({ icon, label, value, sub, accent }) {
   return (
-    <div className="flex flex-col gap-1 px-4 py-3 rounded-xl"
-      style={{ background:'#0f1117', border:`1px solid ${accent??'#1c1f2e'}`, flex:'1 1 120px' }}>
-      <div className="flex items-center gap-1.5" style={{ color:accent??'#6b7280' }}>
-        {icon}
-        <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em' }}>{label}</span>
+    <div className="flex flex-col justify-between gap-1 p-3 sm:px-4 sm:py-3 rounded-xl min-w-0 w-full"
+      style={{ background:'#0f1117', border:`1px solid ${accent??'#1c1f2e'}` }}>
+      <div>
+        <div className="flex items-center gap-1.5 min-w-0" style={{ color:accent??'#6b7280' }}>
+          <span className="shrink-0">{icon}</span>
+          <span className="truncate" style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em' }}>{label}</span>
+        </div>
+        <span className="block font-sans text-xl sm:text-2xl font-bold text-white tracking-tight mt-1 truncate">{value}</span>
       </div>
-      <span className="font-sans text-xl sm:text-2xl font-bold text-white tracking-tight">{value}</span>
-      {sub && <span className="font-sans text-[10px] text-slate-500">{sub}</span>}
+      {sub && <span className="font-sans text-[10px] text-slate-500 truncate block mt-0.5">{sub}</span>}
     </div>
   )
 }
@@ -242,56 +244,58 @@ export default function PublicSchedule() {
   }
 
   return (
-    <div className="min-h-screen text-slate-200" style={{ background: '#0a0b0f' }}>
+    <div className="min-h-screen text-slate-200 overflow-x-hidden" style={{ background: '#0a0b0f' }}>
 
       {/* ── Header ── */}
-      <header className="sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 py-3.5 backdrop-blur-xl"
+      <header className="sticky top-0 z-30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-3 sm:px-6 py-3 backdrop-blur-xl"
         style={{ background: 'rgba(10,11,15,0.92)', borderBottom: '1px solid #1c1f2e' }}>
 
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(76,110,245,0.2)', border: '1px solid rgba(76,110,245,0.35)' }}>
-            <Crown className="w-4 h-4 text-indigo-400" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-sans font-bold text-sm sm:text-base text-white tracking-tight">
-                2323 KvK Schedule
-              </h1>
-              <span className="flex items-center gap-1 text-[10px] font-sans font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                LIVE
-              </span>
+        <div className="flex items-center justify-between w-full sm:w-auto gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: 'rgba(76,110,245,0.2)', border: '1px solid rgba(76,110,245,0.35)' }}>
+              <Crown className="w-4 h-4 text-indigo-400" />
             </div>
-            <p className="font-sans text-[11px] text-slate-400">
-              Kingdom Ministry Schedule · Official Alliance Time Slots
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="font-sans font-bold text-sm sm:text-base text-white tracking-tight">
+                  2323 KvK Schedule
+                </h1>
+                <span className="flex items-center gap-1 text-[10px] font-sans font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  LIVE
+                </span>
+              </div>
+              <p className="font-sans text-[11px] text-slate-400">
+                Kingdom Ministry Schedule · Official Alliance Time Slots
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           {/* Share Link */}
           <button
             onClick={handleCopyLink}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-sans text-xs font-semibold tracking-tight transition-all active:scale-95 bg-[#12141c] hover:bg-[#1a1d28] border border-[#1c1f2e] text-slate-300">
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-sans text-xs font-semibold tracking-tight transition-all active:scale-95 bg-[#12141c] hover:bg-[#1a1d28] border border-[#1c1f2e] text-slate-300">
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5 text-slate-400" />}
-            <span className="hidden sm:inline">{copied ? 'Link Copied!' : 'Share'}</span>
+            <span>{copied ? 'Link Copied!' : 'Share'}</span>
           </button>
 
           {/* Refresh */}
           <button
             onClick={fetchData}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-sans text-xs font-medium tracking-tight transition-all bg-[#12141c] hover:bg-[#1a1d28] border border-[#1c1f2e] text-slate-400 hover:text-white">
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-sans text-xs font-medium tracking-tight transition-all bg-[#12141c] hover:bg-[#1a1d28] border border-[#1c1f2e] text-slate-400 hover:text-white">
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Refresh</span>
+            <span>Refresh</span>
           </button>
 
           {/* Book Appointment CTA */}
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-sans text-xs font-bold tracking-tight text-white transition-all active:scale-95 shadow-lg"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl font-sans text-xs font-bold tracking-tight text-white transition-all active:scale-95 shadow-lg"
             style={{
               background: 'linear-gradient(135deg, #4c6ef5, #5c7cfa)',
               boxShadow: '0 0 20px rgba(92,124,250,0.3)',
@@ -303,41 +307,41 @@ export default function PublicSchedule() {
       </header>
 
       {/* ── Main Container ── */}
-      <main className="px-4 sm:px-6 py-6 space-y-6" style={{ maxWidth: 1440, margin: '0 auto' }}>
+      <main className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-5 sm:space-y-6 overflow-x-hidden">
 
-        {/* Top Summary Cards */}
-        <div className="flex flex-wrap gap-3">
+        {/* Top Summary Cards: 2-col on mobile, 4-col on tablet/desktop */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
           <StatCard
             icon={<span style={{fontSize:13}}>👥</span>}
-            label="Total Players Booked"
+            label="Total Booked"
             value={rows.length}
-            sub="Across TEA, VIK, ERA, FFF"
+            sub="TEA, VIK, ERA, FFF"
           />
           <StatCard
             icon={<span style={{fontSize:13}}>⚒️</span>}
-            label="Day 1 (Const & Res)"
+            label="Day 1 (Const/Res)"
             value={`${48 - d1UnclaimedCount} / 48`}
-            sub={`${d1UnclaimedCount} slots remaining`}
+            sub={`${d1UnclaimedCount} open`}
             accent={activeDay === 'day1' ? 'rgba(76,110,245,0.7)' : 'rgba(76,110,245,0.3)'}
           />
           <StatCard
             icon={<span style={{fontSize:13}}>⚔️</span>}
             label="Day 4 (Training)"
             value={`${48 - d4UnclaimedCount} / 48`}
-            sub={`${d4UnclaimedCount} slots remaining`}
+            sub={`${d4UnclaimedCount} open`}
             accent={activeDay === 'day4' ? 'rgba(245,158,11,0.7)' : 'rgba(245,158,11,0.3)'}
           />
           <StatCard
             icon={<Clock className="w-3.5 h-3.5" />}
             label="Open Slots Today"
             value={activeDay === 'day1' ? `${d1UnclaimedCount}` : `${d4UnclaimedCount}`}
-            sub={`Free to book in ${activeDay === 'day1' ? 'Day 1' : 'Day 4'}`}
+            sub={`Free in ${activeDay === 'day1' ? 'Day 1' : 'Day 4'}`}
             accent="rgba(244,63,94,0.6)"
           />
         </div>
 
         {/* ── Read-Only Slot Coverage Visualizer ── */}
-        <div className="rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl"
+        <div className="rounded-2xl p-3 sm:p-5 space-y-4 shadow-xl"
           style={{ background: '#0f1117', border: '1px solid #1c1f2e' }}>
 
           {/* Visualizer Header */}
@@ -358,21 +362,21 @@ export default function PublicSchedule() {
                       color: '#6ee7b7',
                       border: '1px solid rgba(16,185,129,0.3)',
                     }}>
-                    {coveredSlots} Slots Claimed · {unclaimedSlots} Open
+                    {coveredSlots} Claimed · {unclaimedSlots} Open
                   </span>
                 </div>
                 <p className="font-sans text-[11px] text-slate-400 mt-0.5">
-                  Click any covered slot to filter the table below · Click open slots to book
+                  Click any covered slot to filter table below · Click open slots to book
                 </p>
               </div>
             </div>
 
             {/* Day Switcher & Hide Covered Toggle */}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center p-1 rounded-xl bg-[#0a0b0f] border border-[#1c1f2e]">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto">
+              <div className="flex items-center p-1 rounded-xl bg-[#0a0b0f] border border-[#1c1f2e] flex-1 sm:flex-none justify-center">
                 <button
                   onClick={() => { setActiveDay('day1'); setSelectedSlotFilter(null) }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-xs font-bold tracking-tight transition-all"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-xs font-bold tracking-tight transition-all"
                   style={activeDay === 'day1'
                     ? { background: 'rgba(76, 110, 245, 0.22)', color: '#748ffc', border: '1px solid rgba(76, 110, 245, 0.45)' }
                     : { color: '#6b7280', border: '1px solid transparent' }}>
@@ -380,13 +384,13 @@ export default function PublicSchedule() {
                   <span>Day 1</span>
                   <span className="font-sans text-[10px] px-1.5 py-0.5 rounded font-semibold tracking-tight"
                     style={{ background: 'rgba(0,0,0,0.4)', color: activeDay === 'day1' ? '#a5b4fc' : '#6b7280' }}>
-                    {d1UnclaimedCount} open
+                    {d1UnclaimedCount}
                   </span>
                 </button>
 
                 <button
                   onClick={() => { setActiveDay('day4'); setSelectedSlotFilter(null) }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-xs font-bold tracking-tight transition-all"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-xs font-bold tracking-tight transition-all"
                   style={activeDay === 'day4'
                     ? { background: 'rgba(245, 158, 11, 0.22)', color: '#fcd34d', border: '1px solid rgba(245, 158, 11, 0.45)' }
                     : { color: '#6b7280', border: '1px solid transparent' }}>
@@ -394,14 +398,14 @@ export default function PublicSchedule() {
                   <span>Day 4</span>
                   <span className="font-sans text-[10px] px-1.5 py-0.5 rounded font-semibold tracking-tight"
                     style={{ background: 'rgba(0,0,0,0.4)', color: activeDay === 'day4' ? '#fde68a' : '#6b7280' }}>
-                    {d4UnclaimedCount} open
+                    {d4UnclaimedCount}
                   </span>
                 </button>
               </div>
 
               <button
                 onClick={() => setHideCovered(p => !p)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-sans text-xs font-semibold tracking-tight transition-all"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-sans text-xs font-semibold tracking-tight transition-all"
                 style={hideCovered
                   ? { background: 'rgba(244, 63, 94, 0.16)', border: '1px solid rgba(244, 63, 94, 0.45)', color: '#fda4af' }
                   : { background: '#0a0b0f', border: '1px solid #1c1f2e', color: '#9ca3af' }}>
@@ -413,39 +417,39 @@ export default function PublicSchedule() {
           </div>
 
           {/* Legend Strip */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#1c1f2e]/70 text-xs">
-            <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[#1c1f2e]/70 text-xs">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded"
+                <span className="w-3 h-3 rounded shrink-0"
                   style={{ background: 'rgba(244,63,94,0.06)', border: '1px dashed rgba(244,63,94,0.55)' }} />
                 <span className="font-sans text-[11px] text-slate-400">
-                  Open Slot ({unclaimedSlots})
+                  Open ({unclaimedSlots})
                 </span>
               </div>
 
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded"
+                <span className="w-3 h-3 rounded shrink-0"
                   style={{ background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.55)' }} />
                 <span className="font-sans text-[11px] text-slate-400">
-                  Booked Slot ({coveredSlots})
+                  Booked ({coveredSlots})
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 font-sans text-[11px] text-slate-500">
+            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 font-sans text-[11px] text-slate-500">
               {selectedSlotFilter && (
                 <button
                   onClick={() => setSelectedSlotFilter(null)}
-                  className="text-indigo-400 hover:text-indigo-300 font-semibold underline">
+                  className="text-indigo-400 hover:text-indigo-300 font-semibold underline truncate">
                   Clear Slot Filter ({selectedSlotFilter})
                 </button>
               )}
-              <span>Showing {displayedSlots.length} of {totalSlots} slots</span>
+              <span className="shrink-0">{displayedSlots.length} of {totalSlots} slots</span>
             </div>
           </div>
 
-          {/* 48 Slots Heatmap Grid */}
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-12 gap-2">
+          {/* 48 Slots Heatmap Grid: 2-col on mobile, 3-col on sm, 4-col on md, 6-col on lg, 8-col on xl, 12-col on 2xl */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-12 gap-2">
             {displayedSlots.map(({ slot, signups, count, status }) => {
               const isUnclaimed = status === 'unclaimed'
               const isSelected  = selectedSlotFilter === slot.value
@@ -476,7 +480,7 @@ export default function PublicSchedule() {
                     setHoveredData({ slot, signups, status, rect })
                   }}
                   onMouseLeave={() => setHoveredData(null)}
-                  className={`group relative flex flex-col justify-between p-2 rounded-xl transition-all select-none cursor-pointer ${
+                  className={`group relative flex flex-col justify-between p-2 sm:p-2.5 rounded-xl transition-all select-none cursor-pointer min-w-0 ${
                     isUnclaimed
                       ? 'hover:border-rose-400 hover:bg-rose-950/25 active:scale-95'
                       : isSelected
@@ -491,33 +495,33 @@ export default function PublicSchedule() {
                   }}
                 >
                   {/* Top line: Slot Time & Indicator */}
-                  <div className="flex items-center justify-between gap-1">
-                    <span className={`font-sans text-xs font-semibold tracking-tight transition-colors ${
+                  <div className="flex items-center justify-between gap-1 min-w-0">
+                    <span className={`font-sans text-xs font-semibold tracking-tight transition-colors truncate ${
                       isSelected ? 'text-white font-bold' : 'text-slate-200 group-hover:text-white'
                     }`}>
                       {slot.value}
                     </span>
                     {!isUnclaimed ? (
-                      <span className="w-2 h-2 rounded-full"
+                      <span className="w-2 h-2 rounded-full shrink-0"
                         style={{ background: '#10b981', boxShadow: '0 0 6px #10b981' }} />
                     ) : (
-                      <span className="font-sans text-[10px] text-rose-400 font-bold tracking-wide uppercase group-hover:text-rose-300">
+                      <span className="font-sans text-[10px] text-rose-400 font-bold tracking-wide uppercase group-hover:text-rose-300 shrink-0">
                         FREE
                       </span>
                     )}
                   </div>
 
                   {/* Bottom line: Player Name & Alliance/TC */}
-                  <div className="mt-1">
+                  <div className="mt-1 min-w-0">
                     {isUnclaimed ? (
-                      <div className="flex items-center gap-1 font-sans text-[10px] text-rose-300/80 group-hover:text-rose-200">
+                      <div className="flex items-center gap-1 font-sans text-[10px] text-rose-300/80 group-hover:text-rose-200 min-w-0">
                         <Sparkles className="w-3 h-3 shrink-0" />
-                        <span className="font-semibold tracking-tight truncate">Open Slot</span>
+                        <span className="font-semibold tracking-tight truncate min-w-0">Open Slot</span>
                       </div>
                     ) : (
-                      <div className="flex flex-col">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="font-sans text-xs font-semibold text-slate-100 truncate max-w-[70px] sm:max-w-[85px] tracking-tight">
+                      <div className="flex flex-col min-w-0">
+                        <div className="flex items-center justify-between gap-1.5 min-w-0">
+                          <span className="font-sans text-xs font-semibold text-slate-100 truncate min-w-0 flex-1 tracking-tight">
                             {topPlayer?.player_name}
                           </span>
                           <span className="font-sans text-[10px] font-bold text-slate-300 shrink-0">
@@ -570,48 +574,50 @@ export default function PublicSchedule() {
             </div>
 
             {/* Filter pills & search */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              {/* Day filter for list */}
-              <div className="flex items-center gap-1 bg-[#0f1117] p-1 rounded-xl border border-[#1c1f2e]">
-                {[['ALL', 'All Days'], ['day1', '⚒️ Day 1'], ['day4', '⚔️ Day 4']].map(([d, lbl]) => (
-                  <button
-                    key={d}
-                    onClick={() => setTableDayFilter(d)}
-                    className={`px-2.5 py-1 rounded-lg font-sans text-xs font-semibold tracking-tight transition-all ${
-                      tableDayFilter === d
-                        ? 'bg-indigo-500/20 text-indigo-300'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}>
-                    {lbl}
-                  </button>
-                ))}
-              </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full sm:w-auto">
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Day filter for list */}
+                <div className="flex items-center gap-1 bg-[#0f1117] p-1 rounded-xl border border-[#1c1f2e]">
+                  {[['ALL', 'All Days'], ['day1', '⚒️ Day 1'], ['day4', '⚔️ Day 4']].map(([d, lbl]) => (
+                    <button
+                      key={d}
+                      onClick={() => setTableDayFilter(d)}
+                      className={`px-2.5 py-1 rounded-lg font-sans text-xs font-semibold tracking-tight transition-all ${
+                        tableDayFilter === d
+                          ? 'bg-indigo-500/20 text-indigo-300'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}>
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
 
-              {/* Alliance filter */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {['ALL', ...ALLIANCES].map(a => (
-                  <button
-                    key={a}
-                    onClick={() => setAllianceFilter(a)}
-                    className={`px-2.5 py-1 rounded-lg font-sans text-xs font-semibold tracking-tight transition-all ${
-                      allianceFilter === a
-                        ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40'
-                        : 'bg-[#0f1117] text-slate-400 border border-[#1c1f2e] hover:text-slate-200'
-                    }`}>
-                    {a === 'ALL' ? 'All Alliances' : a}
-                  </button>
-                ))}
+                {/* Alliance filter */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {['ALL', ...ALLIANCES].map(a => (
+                    <button
+                      key={a}
+                      onClick={() => setAllianceFilter(a)}
+                      className={`px-2.5 py-1 rounded-lg font-sans text-xs font-semibold tracking-tight transition-all ${
+                        allianceFilter === a
+                          ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40'
+                          : 'bg-[#0f1117] text-slate-400 border border-[#1c1f2e] hover:text-slate-200'
+                      }`}>
+                      {a === 'ALL' ? 'All Alliances' : a}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Search */}
-              <div className="relative">
+              <div className="relative w-full sm:w-auto">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
                 <input
                   type="text"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Find your name…"
-                  className="pl-8 pr-4 py-1.5 rounded-xl font-sans text-xs bg-[#0f1117] border border-[#1c1f2e] text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500/50 w-36 sm:w-48"
+                  className="w-full sm:w-48 pl-8 pr-4 py-1.5 rounded-xl font-sans text-xs bg-[#0f1117] border border-[#1c1f2e] text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500/50"
                 />
               </div>
             </div>
@@ -714,12 +720,13 @@ export default function PublicSchedule() {
           style={{
             left: Math.min(
               Math.max(12, hoveredData.rect.left + hoveredData.rect.width / 2 - 130),
-              window.innerWidth - 280
+              (typeof window !== 'undefined' ? window.innerWidth : 360) - 272
             ),
             top: hoveredData.rect.top - 12 > 140
               ? hoveredData.rect.top - 8
               : hoveredData.rect.bottom + 8,
             transform: hoveredData.rect.top - 12 > 140 ? 'translateY(-100%)' : 'none',
+            maxWidth: 'calc(100vw - 24px)',
             width: 260,
           }}
         >

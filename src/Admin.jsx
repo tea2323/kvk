@@ -137,13 +137,13 @@ function StatCard({ icon, label, value, accent, onClick }) {
   return (
     <div
       onClick={onClick}
-      className={`flex flex-col gap-1 px-4 py-3 rounded-xl transition-all ${onClick ? 'cursor-pointer hover:border-slate-500' : ''}`}
-      style={{ background:'#0f1117', border:`1px solid ${accent??'#1c1f2e'}`, flex:'1 1 120px' }}>
-      <div className="flex items-center gap-1.5" style={{ color:accent??'#6b7280' }}>
-        {icon}
-        <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em' }}>{label}</span>
+      className={`flex flex-col justify-between gap-1 p-3 sm:px-4 sm:py-3 rounded-xl min-w-0 w-full transition-all ${onClick ? 'cursor-pointer hover:border-slate-500 active:scale-98' : ''}`}
+      style={{ background:'#0f1117', border:`1px solid ${accent??'#1c1f2e'}` }}>
+      <div className="flex items-center gap-1.5 min-w-0" style={{ color:accent??'#6b7280' }}>
+        <span className="shrink-0">{icon}</span>
+        <span className="truncate" style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em' }}>{label}</span>
       </div>
-      <span className="font-sans text-xl sm:text-2xl font-bold text-white tracking-tight">{value}</span>
+      <span className="block font-sans text-xl sm:text-2xl font-bold text-white tracking-tight mt-1 truncate">{value}</span>
     </div>
   )
 }
@@ -549,7 +549,7 @@ function SlotCoverageVisualizer({
   }
 
   return (
-    <div className="rounded-2xl p-4 sm:p-5 space-y-4"
+    <div className="rounded-2xl p-3 sm:p-5 space-y-4"
       style={{ background: '#0f1117', border: '1px solid #1c1f2e', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
 
       {/* Visualizer Header */}
@@ -580,13 +580,13 @@ function SlotCoverageVisualizer({
         </div>
 
         {/* Day switch & Hide Covered toggle */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto">
           {/* Day 1 vs Day 4 Switch (acts as global sync) */}
-          <div className="flex items-center p-1 rounded-xl"
+          <div className="flex items-center p-1 rounded-xl flex-1 sm:flex-none justify-center"
             style={{ background: '#0a0b0f', border: '1px solid #1c1f2e' }}>
             <button
               onClick={() => setActiveDay('day1')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-xs font-bold tracking-tight transition-all"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-xs font-bold tracking-tight transition-all"
               style={activeDay === 'day1'
                 ? { background: 'rgba(76, 110, 245, 0.22)', color: '#748ffc', border: '1px solid rgba(76, 110, 245, 0.45)', boxShadow: '0 0 12px rgba(92,124,250,0.25)' }
                 : { color: '#6b7280', border: '1px solid transparent' }}
@@ -595,13 +595,13 @@ function SlotCoverageVisualizer({
               <span>Day 1</span>
               <span className="font-sans text-[10px] px-1.5 py-0.5 rounded font-semibold tracking-tight"
                 style={{ background: 'rgba(0,0,0,0.4)', color: activeDay === 'day1' ? '#a5b4fc' : '#6b7280' }}>
-                {d1UnclaimedCount} free
+                {d1UnclaimedCount}
               </span>
             </button>
 
             <button
               onClick={() => setActiveDay('day4')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-xs font-bold tracking-tight transition-all"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-xs font-bold tracking-tight transition-all"
               style={activeDay === 'day4'
                 ? { background: 'rgba(245, 158, 11, 0.22)', color: '#fcd34d', border: '1px solid rgba(245, 158, 11, 0.45)', boxShadow: '0 0 12px rgba(245,158,11,0.25)' }
                 : { color: '#6b7280', border: '1px solid transparent' }}
@@ -610,7 +610,7 @@ function SlotCoverageVisualizer({
               <span>Day 4</span>
               <span className="font-sans text-[10px] px-1.5 py-0.5 rounded font-semibold tracking-tight"
                 style={{ background: 'rgba(0,0,0,0.4)', color: activeDay === 'day4' ? '#fde68a' : '#6b7280' }}>
-                {d4UnclaimedCount} free
+                {d4UnclaimedCount}
               </span>
             </button>
           </div>
@@ -618,7 +618,7 @@ function SlotCoverageVisualizer({
           {/* Hide Covered Slots Toggle */}
           <button
             onClick={() => setHideCovered(p => !p)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-sans text-xs font-semibold tracking-tight transition-all active:scale-95"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-sans text-xs font-semibold tracking-tight transition-all active:scale-95"
             style={hideCovered
               ? { background: 'rgba(244, 63, 94, 0.16)', border: '1px solid rgba(244, 63, 94, 0.45)', color: '#fda4af' }
               : { background: '#0a0b0f', border: '1px solid #1c1f2e', color: '#9ca3af' }}
@@ -638,7 +638,7 @@ function SlotCoverageVisualizer({
           <button
             onClick={onSharePublic}
             title="Copy public read-only schedule URL to clipboard"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-sans text-xs font-semibold tracking-tight transition-all active:scale-95 bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/35 text-indigo-300">
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-sans text-xs font-semibold tracking-tight transition-all active:scale-95 bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/35 text-indigo-300">
             <Share2 className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Share Schedule</span>
             <span className="sm:hidden">Share</span>
@@ -647,7 +647,7 @@ function SlotCoverageVisualizer({
           <button
             onClick={onPreviewPublic}
             title="Open public schedule page in a new tab"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-sans text-xs font-semibold tracking-tight transition-all active:scale-95 bg-[#0a0b0f] hover:bg-[#12141c] border border-[#1c1f2e] text-slate-400 hover:text-white">
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-sans text-xs font-semibold tracking-tight transition-all active:scale-95 bg-[#0a0b0f] hover:bg-[#12141c] border border-[#1c1f2e] text-slate-400 hover:text-white">
             <ExternalLink className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Preview</span>
           </button>
@@ -655,18 +655,18 @@ function SlotCoverageVisualizer({
       </div>
 
       {/* Legend & Summary Info */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#1c1f2e]/70 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[#1c1f2e]/70 text-xs">
         <div className="flex flex-wrap items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded"
+            <span className="w-3 h-3 rounded shrink-0"
               style={{ background: 'rgba(244,63,94,0.06)', border: '1px dashed rgba(244,63,94,0.55)' }} />
             <span className="font-sans text-[11px] text-slate-400">
-              Unclaimed: <strong className="text-rose-400">{unclaimedSlots}</strong>
+              Free: <strong className="text-rose-400">{unclaimedSlots}</strong>
             </span>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded"
+            <span className="w-3 h-3 rounded shrink-0"
               style={{ background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.55)' }} />
             <span className="font-sans text-[11px] text-slate-400">
               Covered: <strong className="text-emerald-400">{coveredSlots - conflictSlots}</strong>
@@ -674,7 +674,7 @@ function SlotCoverageVisualizer({
           </div>
 
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded"
+            <span className="w-3 h-3 rounded shrink-0"
               style={{ background: 'rgba(245,158,11,0.25)', border: '1px solid rgba(245,158,11,0.65)' }} />
             <span className="font-sans text-[11px] text-slate-400">
               Conflict: <strong className="text-amber-400">{conflictSlots}</strong>
@@ -682,19 +682,19 @@ function SlotCoverageVisualizer({
           </div>
         </div>
 
-        <div className="flex items-center gap-3 font-sans text-[11px] text-slate-500">
+        <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 font-sans text-[11px] text-slate-500">
           {selectedSlotFilter && (
             <button
               onClick={() => setSelectedSlotFilter(null)}
-              className="text-indigo-400 hover:text-indigo-300 font-semibold underline">
+              className="text-indigo-400 hover:text-indigo-300 font-semibold underline truncate">
               Clear Slot Filter ({selectedSlotFilter})
             </button>
           )}
-          <span>Showing {displayedSlots.length} of {totalSlots} slots</span>
+          <span className="shrink-0">{displayedSlots.length} of {totalSlots} slots</span>
         </div>
       </div>
 
-      {/* Heatmap Grid */}
+      {/* Heatmap Grid: 2-col on mobile, 3-col on sm, 4-col on md, 6-col on lg, 8-col on xl, 12-col on 2xl */}
       {displayedSlots.length === 0 ? (
         <div className="py-12 flex flex-col items-center justify-center gap-2 text-center"
           style={{ background: '#0a0b0f', border: '1px dashed #1c1f2e', borderRadius: 16 }}>
@@ -708,7 +708,7 @@ function SlotCoverageVisualizer({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-12 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-12 gap-2">
           {displayedSlots.map(({ slot, signups, count, status }) => {
             const isUnclaimed = status === 'unclaimed'
             const isCovered   = status === 'covered'
@@ -742,7 +742,7 @@ function SlotCoverageVisualizer({
                 onClick={() => handleCellClick(slot, status)}
                 onMouseEnter={(e) => handleCellHover(e, slot, signups, status)}
                 onMouseLeave={handleCellLeave}
-                className={`group relative flex flex-col justify-between p-2 rounded-xl transition-all select-none cursor-pointer ${
+                className={`group relative flex flex-col justify-between p-2 sm:p-2.5 rounded-xl transition-all select-none cursor-pointer min-w-0 ${
                   isUnclaimed
                     ? 'hover:border-rose-400 hover:bg-rose-950/25 active:scale-95'
                     : isSelected
@@ -757,44 +757,44 @@ function SlotCoverageVisualizer({
                 }}
               >
                 {/* Top line: Sleek Typography Time Label & Indicator */}
-                <div className="flex items-center justify-between gap-1">
-                  <span className={`font-sans text-xs font-semibold tracking-tight transition-colors ${
+                <div className="flex items-center justify-between gap-1 min-w-0">
+                  <span className={`font-sans text-xs font-semibold tracking-tight transition-colors truncate ${
                     isSelected ? 'text-white font-bold' : 'text-slate-200 group-hover:text-white'
                   }`}>
                     {slot.value}
                   </span>
                   {isConflict && (
-                    <span className="flex items-center gap-0.5 font-sans text-[10px] font-bold px-1.5 py-0.2 rounded"
+                    <span className="flex items-center gap-0.5 font-sans text-[10px] font-bold px-1.5 py-0.2 rounded shrink-0"
                       style={{ background: 'rgba(245,158,11,0.25)', color: '#fcd34d' }}>
                       <AlertTriangle className="w-2.5 h-2.5" />
                       {count}
                     </span>
                   )}
                   {isCovered && (
-                    <span className="w-2 h-2 rounded-full"
+                    <span className="w-2 h-2 rounded-full shrink-0"
                       style={{ background: '#10b981', boxShadow: '0 0 6px #10b981' }} />
                   )}
                   {isUnclaimed && (
-                    <span className="font-sans text-[10px] text-rose-400 font-bold tracking-wide uppercase group-hover:text-rose-300">
+                    <span className="font-sans text-[10px] text-rose-400 font-bold tracking-wide uppercase group-hover:text-rose-300 shrink-0">
                       FREE
                     </span>
                   )}
                 </div>
 
                 {/* Bottom line: Content */}
-                <div className="mt-1">
+                <div className="mt-1 min-w-0">
                   {isUnclaimed ? (
-                    <div className="flex items-center gap-1 font-sans text-[10px] text-rose-300/80 group-hover:text-rose-200">
+                    <div className="flex items-center gap-1 font-sans text-[10px] text-rose-300/80 group-hover:text-rose-200 min-w-0">
                       <Plus className="w-3 h-3 shrink-0" />
-                      <span className="font-semibold tracking-tight truncate">Assign</span>
+                      <span className="font-semibold tracking-tight truncate min-w-0">Assign</span>
                     </div>
                   ) : (
-                    <div className="flex flex-col">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="font-sans text-xs font-semibold text-slate-100 truncate max-w-[70px] sm:max-w-[85px] tracking-tight">
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center justify-between gap-1.5 min-w-0">
+                        <span className="font-sans text-xs font-semibold text-slate-100 truncate min-w-0 flex-1 tracking-tight">
                           {topPlayer?.player_name}
                         </span>
-                        <span className="font-sans text-[10px] font-semibold text-emerald-400 tracking-tight">
+                        <span className="font-sans text-[10px] font-semibold text-emerald-400 shrink-0 tracking-tight">
                           {topPlayer?._roi ? fmtGold(topPlayer._roi) : '—'}
                         </span>
                       </div>
@@ -819,12 +819,13 @@ function SlotCoverageVisualizer({
           style={{
             left: Math.min(
               Math.max(12, hoveredData.rect.left + hoveredData.rect.width / 2 - 140),
-              window.innerWidth - 300
+              (typeof window !== 'undefined' ? window.innerWidth : 360) - 292
             ),
             top: hoveredData.rect.top - 12 > 160
               ? hoveredData.rect.top - 8
               : hoveredData.rect.bottom + 8,
             transform: hoveredData.rect.top - 12 > 160 ? 'translateY(-100%)' : 'none',
+            maxWidth: 'calc(100vw - 24px)',
             width: 280,
           }}
         >
@@ -1624,70 +1625,82 @@ export default function Admin() {
         input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;}
       `}</style>
 
-      <div className="min-h-screen" style={{ background:'#0a0b0f', animation:'fadeIn 0.2s ease-out' }}>
+      <div className="min-h-screen overflow-x-hidden" style={{ background:'#0a0b0f', animation:'fadeIn 0.2s ease-out' }}>
 
         {/* ── Top bar ── */}
-        <div className="sticky top-0 z-30 flex items-center gap-2 px-4 sm:px-6 py-3"
-          style={{ background:'rgba(10,11,15,0.93)', borderBottom:'1px solid #1c1f2e', backdropFilter:'blur(12px)' }}>
+        <div className="sticky top-0 z-30 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3 sm:px-6 py-2.5 sm:py-3 backdrop-blur-xl"
+          style={{ background:'rgba(10,11,15,0.93)', borderBottom:'1px solid #1c1f2e' }}>
 
-          <button onClick={() => navigate('/')}
-            className="flex items-center gap-1.5 text-sm font-sans font-medium transition-colors shrink-0 text-slate-400 hover:text-white">
-            <ArrowLeft className="w-4 h-4" /><span className="hidden sm:inline">Booking</span>
-          </button>
+          <div className="flex items-center justify-between w-full sm:w-auto gap-2">
+            <button onClick={() => navigate('/')}
+              className="flex items-center gap-1.5 text-xs sm:text-sm font-sans font-medium transition-colors shrink-0 text-slate-400 hover:text-white">
+              <ArrowLeft className="w-4 h-4" /><span>Booking</span>
+            </button>
 
-          <div className="flex items-center gap-2 ml-1 mr-auto">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background:'rgba(76,110,245,0.2)', border:'1px solid rgba(76,110,245,0.3)' }}>
-              <Crown className="w-3.5 h-3.5" style={{ color:'#748ffc' }} />
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background:'rgba(76,110,245,0.2)', border:'1px solid rgba(76,110,245,0.3)' }}>
+                <Crown className="w-3.5 h-3.5" style={{ color:'#748ffc' }} />
+              </div>
+              <span className="font-sans font-bold text-sm text-gray-200 tracking-tight">Ministry Admin</span>
+              <span className="hidden md:inline font-sans text-xs font-medium text-slate-500">— 2323 KvK</span>
             </div>
-            <span className="font-sans font-bold text-sm text-gray-200 hidden sm:inline tracking-tight">Ministry Admin</span>
-            <span className="hidden md:inline font-sans text-xs font-medium text-slate-500">— 2323 KvK</span>
+
+            {/* Mobile Logout */}
+            <button onClick={logout}
+              title="Logout"
+              className="sm:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-sans text-xs font-medium tracking-tight"
+              style={{ background:'rgba(244,63,94,0.08)', border:'1px solid rgba(244,63,94,0.2)', color:'#f43f5e' }}>
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           {/* ── Action buttons ── */}
-          {/* Add Player — emerald */}
-          <button onClick={() => setAddModal({ open: true, prefill: null })}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-xs font-semibold tracking-tight transition-all active:scale-95"
-            style={{ background:'rgba(16,185,129,0.12)', border:'1px solid rgba(16,185,129,0.3)', color:'#6ee7b7' }}
-            onMouseOver={e=>{e.currentTarget.style.background='rgba(16,185,129,0.2)';e.currentTarget.style.borderColor='rgba(16,185,129,0.5)'}}
-            onMouseOut={e =>{e.currentTarget.style.background='rgba(16,185,129,0.12)';e.currentTarget.style.borderColor='rgba(16,185,129,0.3)'}}>
-            <UserPlus className="w-3.5 h-3.5" /><span className="hidden sm:inline">Add Player</span>
-          </button>
+          <div className="flex items-center flex-wrap sm:flex-nowrap gap-1.5 sm:gap-2 w-full sm:w-auto">
+            {/* Add Player — emerald */}
+            <button onClick={() => setAddModal({ open: true, prefill: null })}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-sans text-xs font-semibold tracking-tight transition-all active:scale-95"
+              style={{ background:'rgba(16,185,129,0.12)', border:'1px solid rgba(16,185,129,0.3)', color:'#6ee7b7' }}
+              onMouseOver={e=>{e.currentTarget.style.background='rgba(16,185,129,0.2)';e.currentTarget.style.borderColor='rgba(16,185,129,0.5)'}}
+              onMouseOut={e =>{e.currentTarget.style.background='rgba(16,185,129,0.12)';e.currentTarget.style.borderColor='rgba(16,185,129,0.3)'}}>
+              <UserPlus className="w-3.5 h-3.5" /><span>Add Player</span>
+            </button>
 
-          {/* Share Public Link — indigo */}
-          <button onClick={handleSharePublic}
-            title="Copy public read-only schedule URL"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-xs font-semibold tracking-tight transition-all active:scale-95 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300">
-            <Share2 className="w-3.5 h-3.5" /><span className="hidden sm:inline">Share Link</span>
-          </button>
+            {/* Share Public Link — indigo */}
+            <button onClick={handleSharePublic}
+              title="Copy public read-only schedule URL"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-sans text-xs font-semibold tracking-tight transition-all active:scale-95 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300">
+              <Share2 className="w-3.5 h-3.5" /><span>Share</span>
+            </button>
 
-          {/* Export CSV — indigo */}
-          <button onClick={() => exportCsv(displayed, conflictMap)} disabled={displayed.length===0}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-xs font-semibold tracking-tight transition-all disabled:opacity-40"
-            style={{ background:'rgba(76,110,245,0.12)', border:'1px solid rgba(76,110,245,0.3)', color:'#748ffc' }}>
-            <Download className="w-3.5 h-3.5" /><span className="hidden sm:inline">Export</span>
-          </button>
+            {/* Export CSV — indigo */}
+            <button onClick={() => exportCsv(displayed, conflictMap)} disabled={displayed.length===0}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-sans text-xs font-semibold tracking-tight transition-all disabled:opacity-40"
+              style={{ background:'rgba(76,110,245,0.12)', border:'1px solid rgba(76,110,245,0.3)', color:'#748ffc' }}>
+              <Download className="w-3.5 h-3.5" /><span>Export</span>
+            </button>
 
-          {/* Refresh */}
-          <button onClick={fetchData} disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-xs font-medium tracking-tight transition-all text-slate-400 hover:text-white"
-            style={{ background:'rgba(255,255,255,0.05)', border:'1px solid #1c1f2e' }}>
-            <RefreshCw className={`w-3.5 h-3.5 ${loading?'animate-spin':''}`} />
-            <span className="hidden sm:inline">Refresh</span>
-          </button>
+            {/* Refresh */}
+            <button onClick={fetchData} disabled={loading}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-sans text-xs font-medium tracking-tight transition-all text-slate-400 hover:text-white"
+              style={{ background:'rgba(255,255,255,0.05)', border:'1px solid #1c1f2e' }}>
+              <RefreshCw className={`w-3.5 h-3.5 ${loading?'animate-spin':''}`} />
+              <span>Refresh</span>
+            </button>
 
-          {/* Logout — rose */}
-          <button onClick={logout}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-xs font-medium tracking-tight transition-all"
-            style={{ background:'rgba(244,63,94,0.08)', border:'1px solid rgba(244,63,94,0.2)', color:'#f43f5e' }}>
-            <LogOut className="w-3.5 h-3.5" /><span className="hidden sm:inline">Logout</span>
-          </button>
+            {/* Desktop Logout — rose */}
+            <button onClick={logout}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-xs font-medium tracking-tight transition-all"
+              style={{ background:'rgba(244,63,94,0.08)', border:'1px solid rgba(244,63,94,0.2)', color:'#f43f5e' }}>
+              <LogOut className="w-3.5 h-3.5" /><span>Logout</span>
+            </button>
+          </div>
         </div>
 
-        <div className="px-4 sm:px-6 py-6 space-y-6" style={{ maxWidth:1440, margin:'0 auto' }}>
+        <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-5 sm:space-y-6 overflow-x-hidden">
 
-          {/* Summary Stats Strip */}
-          <div className="flex flex-wrap gap-3">
+          {/* Summary Stats Strip: 2-col on mobile, 3-col on sm, 6-col on lg */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
             <StatCard icon={<Users className="w-3.5 h-3.5" />} label="Total Bookings" value={rows.length} />
             <StatCard icon={<AlertTriangle className="w-3.5 h-3.5" />} label="Conflicts" value={totalConflicts}
               accent={totalConflicts>0?'rgba(245,158,11,0.5)':undefined} />
@@ -1762,38 +1775,40 @@ export default function Admin() {
           )}
 
           {/* Table Filters & Search */}
-          <div className="flex flex-wrap items-center gap-3 pt-1">
-            <div className="flex items-center gap-2">
-              <span className="font-sans text-xs font-bold uppercase tracking-wider text-slate-500">Filters:</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex items-center gap-2">
+                <span className="font-sans text-xs font-bold uppercase tracking-wider text-slate-500">Filters:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {['ALL',...ALLIANCES].map(a => (
+                    <button key={a} className={`fpill${allianceFilter===a?' on':''}`} onClick={() => setAllianceFilter(a)}>
+                      {a==='ALL'?'All Alliances':a}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="w-px h-5 hidden sm:block" style={{ background:'#1c1f2e' }} />
+
+              {/* Synchronized Day Filter */}
               <div className="flex flex-wrap gap-1.5">
-                {['ALL',...ALLIANCES].map(a => (
-                  <button key={a} className={`fpill${allianceFilter===a?' on':''}`} onClick={() => setAllianceFilter(a)}>
-                    {a==='ALL'?'All Alliances':a}
+                {[['ALL','All Days'],['day1','⚒️ Day 1'],['day4','⚔️ Day 4'],['both','Both']].map(([v,l]) => (
+                  <button
+                    key={v}
+                    className={`fpill${tableDayFilter===v?' on':''}`}
+                    onClick={() => handleTableDayChange(v)}>
+                    {l}
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="w-px h-5 hidden sm:block" style={{ background:'#1c1f2e' }} />
-
-            {/* Synchronized Day Filter */}
-            <div className="flex flex-wrap gap-1.5">
-              {[['ALL','All Days'],['day1','⚒️ Day 1'],['day4','⚔️ Day 4'],['both','Both']].map(([v,l]) => (
-                <button
-                  key={v}
-                  className={`fpill${tableDayFilter===v?' on':''}`}
-                  onClick={() => handleTableDayChange(v)}>
-                  {l}
-                </button>
-              ))}
-            </div>
-
-            <div className="relative ml-auto">
+            <div className="relative w-full sm:w-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none text-slate-500" />
               <input type="text" value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Search player…"
-                className="pl-9 pr-4 py-2 rounded-xl font-sans text-sm placeholder-slate-600 focus:outline-none focus:ring-1"
-                style={{ background:'#0f1117', border:'1px solid #1c1f2e', width:180, color:'#e2e8f0',
+                className="w-full sm:w-48 pl-9 pr-4 py-2 rounded-xl font-sans text-sm placeholder-slate-600 focus:outline-none focus:ring-1"
+                style={{ background:'#0f1117', border:'1px solid #1c1f2e', color:'#e2e8f0',
                          '--tw-ring-color':'rgba(92,124,250,0.3)' }} />
             </div>
           </div>
