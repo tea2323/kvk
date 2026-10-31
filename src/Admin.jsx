@@ -6,7 +6,7 @@ import {
   TrendingUp, Users, Pencil, Trash2, Lock, KeyRound,
   LogOut, Save, X, Check, ShieldAlert, UserPlus, CheckCircle2,
   Clock, Eye, EyeOff, Plus, ArrowRightLeft, ChevronRight,
-  Filter, UserCheck, Sparkles,
+  Filter, UserCheck, Sparkles, Share2, ExternalLink,
 } from 'lucide-react'
 import { supabase } from './lib/supabase.js'
 import { calculateRoiScore } from './lib/roi.js'
@@ -94,11 +94,11 @@ const buildPayload = (f) => ({
 })
 
 // ─── Conflict detection ───────────────────────────────────────────────────────
-const buildConflictMap = (rows) => {
+const buildConflictMap = (rows = []) => {
   const d1 = {}, d4 = {}
-  rows.forEach(r => {
-    if (r.time_slot_day1) (d1[r.time_slot_day1] ??= []).push(r.id)
-    if (r.time_slot_day4) (d4[r.time_slot_day4] ??= []).push(r.id)
+  ;(rows || []).forEach(r => {
+    if (r?.time_slot_day1) (d1[r.time_slot_day1] ??= []).push(r.id)
+    if (r?.time_slot_day4) (d4[r.time_slot_day4] ??= []).push(r.id)
   })
   const map = new Map()
   const mark = (ids, day) =>
@@ -479,11 +479,12 @@ function SlotCoverageVisualizer({
 
   // Map each slot value to list of signups for this day
   const slotData = useMemo(() => {
+    const safeRows = rows || []
     const slotField = activeDay === 'day1' ? 'time_slot_day1' : 'time_slot_day4'
     return TIME_SLOTS.map(slot => {
-      const signups = rows.filter(r =>
-        r.selected_days?.includes(activeDay) && r[slotField] === slot.value
-      ).sort((a, b) => (b._roi ?? 0) - (a._roi ?? 0)) // sort by highest ROI
+      const signups = safeRows.filter(r =>
+        r?.selected_days?.includes(activeDay) && r[slotField] === slot.value
+      ).sort((a, b) => (b?._roi ?? 0) - (a?._roi ?? 0)) // sort by highest ROI
 
       const count = signups.length
       const status = count === 0 ? 'unclaimed' : count === 1 ? 'covered' : 'conflict'
@@ -493,13 +494,14 @@ function SlotCoverageVisualizer({
 
   // Coverage statistics for active day
   const totalSlots     = 48
-  const coveredSlots   = useMemo(() => slotData.filter(s => s.count >= 1).length, [slotData])
-  const unclaimedSlots = useMemo(() => slotData.filter(s => s.count === 0).length, [slotData])
-  const conflictSlots  = useMemo(() => slotData.filter(s => s.count >= 2).length, [slotData])
+  const coveredSlots   = useMemo(() => (slotData || []).filter(s => s.count >= 1).length, [slotData])
+  const unclaimedSlots = useMemo(() => (slotData || []).filter(s => s.count === 0).length, [slotData])
+  const conflictSlots  = useMemo(() => (slotData || []).filter(s => s.count >= 2).length, [slotData])
   const coveragePct    = Math.round((coveredSlots / totalSlots) * 100)
 
   // Filter slots if 'Hide Covered Slots' toggle is active
   const displayedSlots = useMemo(() => {
+    if (!slotData) return []
     if (hideCovered) {
       return slotData.filter(s => s.status === 'unclaimed')
     }
@@ -509,16 +511,16 @@ function SlotCoverageVisualizer({
   // Count unclaimed for both days to display in tab buttons
   const d1UnclaimedCount = useMemo(() => {
     const claimed = new Set()
-    rows.forEach(r => {
-      if (r.selected_days?.includes('day1') && r.time_slot_day1) claimed.add(r.time_slot_day1)
+    ;(rows || []).forEach(r => {
+      if (r?.selected_days?.includes('day1') && r?.time_slot_day1) claimed.add(r.time_slot_day1)
     })
     return 48 - claimed.size
   }, [rows])
 
   const d4UnclaimedCount = useMemo(() => {
     const claimed = new Set()
-    rows.forEach(r => {
-      if (r.selected_days?.includes('day4') && r.time_slot_day4) claimed.add(r.time_slot_day4)
+    ;(rows || []).forEach(r => {
+      if (r?.selected_days?.includes('day4') && r?.time_slot_day4) claimed.add(r.time_slot_day4)
     })
     return 48 - claimed.size
   }, [rows])
