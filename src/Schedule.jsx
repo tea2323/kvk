@@ -105,13 +105,45 @@ export default function PublicSchedule() {
     setLoading(true)
     const { data, error } = await supabase
       .from('kvk_appointments')
-      .select('id, player_name, alliance, tc_level, selected_days, time_slot_day1, time_slot_day4, created_at')
+      .select('id, player_name, alliance, tc_level, selected_days, time_slot_day1, time_slot_day4, created_at, status')
       .order('player_name', { ascending: true })
 
     if (error) {
-      console.error('[Public Schedule Fetch Error]', error)
+      // Fallback query if status column is pending in DB schema cache
+      const fallbackRes = await supabase
+        .from('kvk_appointments')
+        .select('id, player_name, alliance, tc_level, selected_days, time_slot_day1, time_slot_day4, created_at')
+        .order('player_name', { ascending: true })
+
+      if (fallbackRes.error) {
+        console.error('[Public Schedule Fetch Error]', fallbackRes.error)
+      } else {
+        const activeRows = (fallbackRes.data ?? []).filter(r => {
+          let localStatus = null
+          try {
+            localStatus = typeof window !== 'undefined'
+              ? (JSON.parse(localStorage.getItem('kvk_status_overrides') || '{}'))[r.id]
+              : null
+          } catch {}
+          const status = r.status || localStatus || 'approved'
+          return status !== 'declined'
+        })
+        setRows(activeRows)
+        setLastUpdated(new Date())
+      }
     } else {
-      setRows(data ?? [])
+      // Exclude declined appointments
+      const activeRows = (data ?? []).filter(r => {
+        let localStatus = null
+        try {
+          localStatus = typeof window !== 'undefined'
+            ? (JSON.parse(localStorage.getItem('kvk_status_overrides') || '{}'))[r.id]
+            : null
+        } catch {}
+        const status = r.status || localStatus || 'approved'
+        return status !== 'declined'
+      })
+      setRows(activeRows)
       setLastUpdated(new Date())
     }
     setLoading(false)

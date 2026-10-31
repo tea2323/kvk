@@ -65,16 +65,26 @@ const roiStyle = (score) => {
   return                    { color:'#9ca3af', bg:'rgba(107,114,128,0.10)', border:'rgba(107,114,128,0.2)' }
 }
 
-const enrichRoi = (r) => ({
-  ...r,
-  _roi: calculateRoiScore({
-    tcLevel:           r.tc_level,
-    constructionDays:  r.construction_days,  constructionHours: r.construction_hours,
-    researchDays:      r.research_days,      researchHours:     r.research_hours,
-    trainingDays:      r.training_days,      trainingHours:     r.training_hours,
-    trueGold:          r.true_gold_count,
-  }),
-})
+const enrichRoi = (r) => {
+  let localStatus = null
+  try {
+    localStatus = typeof window !== 'undefined'
+      ? (JSON.parse(localStorage.getItem('kvk_status_overrides') || '{}'))[r.id]
+      : null
+  } catch {}
+  const status = r.status || localStatus || 'approved'
+  return {
+    ...r,
+    status,
+    _roi: calculateRoiScore({
+      tcLevel:           r.tc_level,
+      constructionDays:  r.construction_days,  constructionHours: r.construction_hours,
+      researchDays:      r.research_days,      researchHours:     r.research_hours,
+      trainingDays:      r.training_days,      trainingHours:     r.training_hours,
+      trueGold:          r.true_gold_count,
+    }),
+  }
+}
 
 // Build a safe DB payload with strict type coercion — shared by Add + Edit
 const buildPayload = (f) => ({
@@ -91,12 +101,14 @@ const buildPayload = (f) => ({
   true_gold_count:    parseInt(f.trueGold,          10) || 0,
   time_slot_day1:     f.timeSlotDay1 ? String(f.timeSlotDay1) : null,
   time_slot_day4:     f.timeSlotDay4 ? String(f.timeSlotDay4) : null,
+  ...(f.status ? { status: f.status } : {}),
 })
 
-// ─── Conflict detection ───────────────────────────────────────────────────────
+// ─── Conflict detection (declined bookings are excluded) ──────────────────────
 const buildConflictMap = (rows = []) => {
   const d1 = {}, d4 = {}
   ;(rows || []).forEach(r => {
+    if (r?.status === 'declined') return
     if (r?.time_slot_day1) (d1[r.time_slot_day1] ??= []).push(r.id)
     if (r?.time_slot_day4) (d4[r.time_slot_day4] ??= []).push(r.id)
   })
@@ -110,10 +122,10 @@ const buildConflictMap = (rows = []) => {
 
 // ─── CSV Export ───────────────────────────────────────────────────────────────
 const exportCsv = (rows, conflictMap) => {
-  const hdrs = ['Rank','Player','Alliance','TC Level','Selected Days','Day 1 Slot','Day 4 Slot',
+  const hdrs = ['Rank','Player','Alliance','Status','TC Level','Selected Days','Day 1 Slot','Day 4 Slot',
                 'Construction','Research','Training','True Gold','ROI Score','Conflict','Submitted At']
   const body = rows.map((r, i) => [
-    i+1, r.player_name, r.alliance, r.tc_level,
+    i+1, r.player_name, r.alliance, r.status || 'approved', r.tc_level,
     (r.selected_days||[]).join(' + '),
     fmtSlot(r.time_slot_day1), fmtSlot(r.time_slot_day4),
     fmtSpd(r.construction_days, r.construction_hours),
@@ -207,9 +219,9 @@ function ReassignModal({ slot, day, rows, onReassign, onOpenFullAdd, onClose }) 
   const slotField = day === 'day1' ? 'time_slot_day1' : 'time_slot_day4'
   const dayName   = day === 'day1' ? 'Day 1 (Construction & Research)' : 'Day 4 (Training)'
 
-  // Eligible candidates: all players signed up for this day
+  // Eligible candidates: all active players signed up for this day
   const candidates = useMemo(() => {
-    let list = rows.filter(r => r.selected_days?.includes(day))
+    let list = rows.filter(r => r.selected_days?.includes(day) && r.status !== 'declined')
 
     // Search query
     if (searchQuery.trim()) {
@@ -228,7 +240,7 @@ function ReassignModal({ slot, day, rows, onReassign, onOpenFullAdd, onClose }) 
     // Count occupancy per slot on this day to detect which players currently have conflicts
     const slotCountMap = {}
     rows.forEach(r => {
-      if (r.selected_days?.includes(day) && r[slotField]) {
+      if (r.status !== 'declined' && r.selected_days?.includes(day) && r[slotField]) {
         slotCountMap[r[slotField]] = (slotCountMap[r[slotField]] || 0) + 1
       }
     })
@@ -477,12 +489,13 @@ function SlotCoverageVisualizer({
 }) {
   const [hoveredData, setHoveredData] = useState(null)
 
-  // Map each slot value to list of signups for this day
+  // Map each slot value to list of signups for this day (declined appointments excluded)
   const slotData = useMemo(() => {
     const safeRows = rows || []
     const slotField = activeDay === 'day1' ? 'time_slot_day1' : 'time_slot_day4'
     return TIME_SLOTS.map(slot => {
       const signups = safeRows.filter(r =>
+        r?.status !== 'declined' &&
         r?.selected_days?.includes(activeDay) && r[slotField] === slot.value
       ).sort((a, b) => (b?._roi ?? 0) - (a?._roi ?? 0)) // sort by highest ROI
 
@@ -512,7 +525,7 @@ function SlotCoverageVisualizer({
   const d1UnclaimedCount = useMemo(() => {
     const claimed = new Set()
     ;(rows || []).forEach(r => {
-      if (r?.selected_days?.includes('day1') && r?.time_slot_day1) claimed.add(r.time_slot_day1)
+      if (r?.status !== 'declined' && r?.selected_days?.includes('day1') && r?.time_slot_day1) claimed.add(r.time_slot_day1)
     })
     return 48 - claimed.size
   }, [rows])
@@ -520,7 +533,7 @@ function SlotCoverageVisualizer({
   const d4UnclaimedCount = useMemo(() => {
     const claimed = new Set()
     ;(rows || []).forEach(r => {
-      if (r?.selected_days?.includes('day4') && r?.time_slot_day4) claimed.add(r.time_slot_day4)
+      if (r?.status !== 'declined' && r?.selected_days?.includes('day4') && r?.time_slot_day4) claimed.add(r.time_slot_day4)
     })
     return 48 - claimed.size
   }, [rows])
@@ -1500,12 +1513,19 @@ export default function Admin() {
     showToast('success', `🗑️ ${name}'s booking deleted`)
   }
 
+  const [showDeclined,        setShowDeclined]        = useState(true)
+
   // ── Derived stats & conflict calculations ─────────────────────────────────────
   const conflictMap = useMemo(() => buildConflictMap(rows), [rows])
 
-  // Filtered displayed rows with real-time slot synchronization
+  // Filtered displayed rows with real-time slot synchronization and status filter
   const displayed = useMemo(() => {
     let res = [...rows]
+
+    // Declined filter
+    if (!showDeclined) {
+      res = res.filter(r => r.status !== 'declined')
+    }
 
     // Alliance filter
     if (allianceFilter !== 'ALL') res = res.filter(r => r.alliance === allianceFilter)
@@ -1533,19 +1553,23 @@ export default function Admin() {
       return sort.dir==='desc' ? -cmp : cmp
     })
     return res
-  }, [rows, allianceFilter, tableDayFilter, selectedSlotFilter, activeDay, search, sort])
+  }, [rows, showDeclined, allianceFilter, tableDayFilter, selectedSlotFilter, activeDay, search, sort])
 
   const toggleSort     = (col) => setSort(s => s.col===col?{col,dir:s.dir==='desc'?'asc':'desc'}:{col,dir:'desc'})
-  const totalConflicts = rows.filter(r => conflictMap.has(r.id)).length
-  const day1Count      = rows.filter(r => r.selected_days?.includes('day1')).length
-  const day4Count      = rows.filter(r => r.selected_days?.includes('day4')).length
-  const bothCount      = rows.filter(r => r.selected_days?.includes('day1') && r.selected_days?.includes('day4')).length
 
-  // Calculate unique unclaimed slots across both days for summary stat badge
+  // Counts strictly exclude declined appointments from active schedule coverage
+  const activeRows          = useMemo(() => rows.filter(r => r.status !== 'declined'), [rows])
+  const declinedCount       = useMemo(() => rows.filter(r => r.status === 'declined').length, [rows])
+  const totalConflicts      = activeRows.filter(r => conflictMap.has(r.id)).length
+  const day1Count           = activeRows.filter(r => r.selected_days?.includes('day1')).length
+  const day4Count           = activeRows.filter(r => r.selected_days?.includes('day4')).length
+  const bothCount           = activeRows.filter(r => r.selected_days?.includes('day1') && r.selected_days?.includes('day4')).length
+
+  // Calculate unique unclaimed slots across both days (excluding declined)
   const d1CoveredCount = useMemo(() => {
     const s = new Set()
     rows.forEach(r => {
-      if (r.selected_days?.includes('day1') && r.time_slot_day1) s.add(r.time_slot_day1)
+      if (r.status !== 'declined' && r.selected_days?.includes('day1') && r.time_slot_day1) s.add(r.time_slot_day1)
     })
     return s.size
   }, [rows])
@@ -1553,12 +1577,46 @@ export default function Admin() {
   const d4CoveredCount = useMemo(() => {
     const s = new Set()
     rows.forEach(r => {
-      if (r.selected_days?.includes('day4') && r.time_slot_day4) s.add(r.time_slot_day4)
+      if (r.status !== 'declined' && r.selected_days?.includes('day4') && r.time_slot_day4) s.add(r.time_slot_day4)
     })
     return s.size
   }, [rows])
 
   const activeUnclaimedCount = activeDay === 'day1' ? (48 - d1CoveredCount) : (48 - d4CoveredCount)
+
+  // ── Accept / Decline Status Toggle Handler ──────────────────────────────────
+  const handleToggleStatus = async (row) => {
+    const newStatus = row.status === 'declined' ? 'approved' : 'declined'
+
+    // 1. Optimistic React state update
+    setRows(prev => prev.map(r => r.id === row.id ? { ...r, status: newStatus } : r))
+
+    // 2. Persist to localStorage cache so it survives reloads even if DB column is pending
+    try {
+      const overrides = JSON.parse(localStorage.getItem('kvk_status_overrides') || '{}')
+      overrides[row.id] = newStatus
+      localStorage.setItem('kvk_status_overrides', JSON.stringify(overrides))
+    } catch (e) {
+      console.warn('[Status localStorage]', e)
+    }
+
+    // 3. Persist to Supabase
+    const { error: err } = await supabase
+      .from('kvk_appointments')
+      .update({ status: newStatus })
+      .eq('id', row.id)
+
+    if (err) {
+      console.warn('[Supabase status update warning]:', err.message)
+    }
+
+    showToast(
+      newStatus === 'approved' ? 'success' : 'info',
+      newStatus === 'approved'
+        ? `✅ Accepted ${row.player_name} (slot restored)`
+        : `🚫 Declined ${row.player_name} (slot freed)`
+    )
+  }
 
   const handleSharePublic = async () => {
     const publicUrl = `${window.location.origin}${window.location.pathname}#/schedule`
@@ -1701,7 +1759,11 @@ export default function Admin() {
 
           {/* Summary Stats Strip: 2-col on mobile, 3-col on sm, 6-col on lg */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
-            <StatCard icon={<Users className="w-3.5 h-3.5" />} label="Total Bookings" value={rows.length} />
+            <StatCard
+              icon={<Users className="w-3.5 h-3.5" />}
+              label="Active Bookings"
+              value={activeRows.length}
+            />
             <StatCard icon={<AlertTriangle className="w-3.5 h-3.5" />} label="Conflicts" value={totalConflicts}
               accent={totalConflicts>0?'rgba(245,158,11,0.5)':undefined} />
             <StatCard
@@ -1801,6 +1863,26 @@ export default function Admin() {
                   </button>
                 ))}
               </div>
+
+              <div className="w-px h-5 hidden sm:block" style={{ background:'#1c1f2e' }} />
+
+              {/* Quick Toggle: Show / Hide Declined Rows */}
+              <button
+                onClick={() => setShowDeclined(p => !p)}
+                className={`fpill flex items-center gap-1.5 ${!showDeclined ? 'on' : ''}`}
+                style={!showDeclined
+                  ? { background: 'rgba(244,63,94,0.15)', borderColor: 'rgba(244,63,94,0.45)', color: '#fda4af' }
+                  : {}}
+              >
+                {showDeclined ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                <span>{showDeclined ? 'Hide Declined' : 'Show Declined'}</span>
+                {declinedCount > 0 && (
+                  <span className="font-sans text-[10px] px-1.5 py-0.2 rounded font-bold"
+                    style={{ background: 'rgba(244,63,94,0.25)', color: '#fda4af' }}>
+                    {declinedCount}
+                  </span>
+                )}
+              </button>
             </div>
 
             <div className="relative w-full sm:w-auto">
@@ -1848,7 +1930,7 @@ export default function Admin() {
                   Clear slot filter
                 </button>
               ) : (
-                <button onClick={() => {setAllianceFilter('ALL');setTableDayFilter('ALL');setSearch('');setSelectedSlotFilter(null)}}
+                <button onClick={() => {setAllianceFilter('ALL');setTableDayFilter('ALL');setSearch('');setSelectedSlotFilter(null);setShowDeclined(true)}}
                   className="text-xs underline text-indigo-400 hover:text-indigo-300 font-semibold">
                   Clear all filters
                 </button>
@@ -1883,27 +1965,54 @@ export default function Admin() {
                   </thead>
                   <tbody>
                     {displayed.map((r, idx) => {
+                      const isDeclined  = r.status === 'declined'
                       const conflicts   = conflictMap.get(r.id)
-                      const hasConflict = conflicts && conflicts.size > 0
+                      const hasConflict = !isDeclined && conflicts && conflicts.size > 0
                       const days = (r.selected_days||[]).map(d=>d==='day1'?'⚒️':'⚔️').join(' ')
                       return (
-                        <tr key={r.id} className={`arow${hasConflict?' arow-conflict':''}`}
+                        <tr key={r.id}
+                          className={`arow transition-all duration-200 ${
+                            isDeclined
+                              ? 'opacity-50 bg-rose-950/10 hover:opacity-75'
+                              : hasConflict
+                                ? 'arow-conflict'
+                                : ''
+                          }`}
                           style={{ borderBottom:'1px solid #12141c' }}>
                           <td style={{ padding:'10px 14px', color:'#374151', fontWeight:700, textAlign:'center', minWidth:40 }}>{idx+1}</td>
-                          <td style={{ padding:'10px 14px', color:'#e2e8f0', fontWeight:600, whiteSpace:'nowrap', minWidth:130 }}>{r.player_name}</td>
+                          <td style={{ padding:'10px 14px', whiteSpace:'nowrap', minWidth:140 }}>
+                            <div className="flex items-center gap-2">
+                              <span className={`font-semibold tracking-tight ${isDeclined ? 'line-through text-slate-400' : 'text-slate-100'}`}>
+                                {r.player_name}
+                              </span>
+                              {isDeclined ? (
+                                <span className="inline-flex items-center gap-0.5 text-[10px] font-sans font-bold px-1.5 py-0.5 rounded-md bg-rose-500/15 text-rose-400 border border-rose-500/30 uppercase tracking-wider">
+                                  Declined
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-0.5 text-[10px] font-sans font-semibold px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-400/90 border border-emerald-500/20">
+                                  Approved
+                                </span>
+                              )}
+                            </div>
+                          </td>
                           <td style={{ padding:'10px 14px', whiteSpace:'nowrap' }}><AllianceBadge alliance={r.alliance} /></td>
                           <td style={{ padding:'10px 14px', whiteSpace:'nowrap' }}><TcBadge level={r.tc_level} /></td>
                           <td style={{ padding:'10px 14px', fontSize:15, whiteSpace:'nowrap' }}>{days}</td>
-                          {/* Day 1 Slot — Modern Typography */}
+                          {/* Day 1 Slot */}
                           <td className="font-sans text-xs tracking-tight"
                             style={{ padding:'10px 14px', whiteSpace:'nowrap', minWidth:130,
-                            color:conflicts?.has('day1')?'#fcd34d':'#94a3b8', fontWeight:conflicts?.has('day1')?700:500 }}>
+                            color: isDeclined ? '#64748b' : conflicts?.has('day1')?'#fcd34d':'#94a3b8',
+                            fontWeight: conflicts?.has('day1')?700:500,
+                            textDecoration: isDeclined ? 'line-through' : 'none' }}>
                             {fmtSlot(r.time_slot_day1)}
                           </td>
-                          {/* Day 4 Slot — Modern Typography */}
+                          {/* Day 4 Slot */}
                           <td className="font-sans text-xs tracking-tight"
                             style={{ padding:'10px 14px', whiteSpace:'nowrap', minWidth:130,
-                            color:conflicts?.has('day4')?'#fcd34d':'#94a3b8', fontWeight:conflicts?.has('day4')?700:500 }}>
+                            color: isDeclined ? '#64748b' : conflicts?.has('day4')?'#fcd34d':'#94a3b8',
+                            fontWeight: conflicts?.has('day4')?700:500,
+                            textDecoration: isDeclined ? 'line-through' : 'none' }}>
                             {fmtSlot(r.time_slot_day4)}
                           </td>
                           <td style={{ padding:'10px 14px', color:'#6b7280', whiteSpace:'nowrap' }}>{fmtSpd(r.construction_days,r.construction_hours)}</td>
@@ -1911,10 +2020,32 @@ export default function Admin() {
                           <td style={{ padding:'10px 14px', color:'#6b7280', whiteSpace:'nowrap' }}>{fmtSpd(r.training_days,r.training_hours)}</td>
                           <td style={{ padding:'10px 14px', textAlign:'right', color:'#fcd34d', fontWeight:600, whiteSpace:'nowrap' }}>{fmtGold(r.true_gold_count)}</td>
                           <td style={{ padding:'10px 14px', textAlign:'right', whiteSpace:'nowrap' }}><RoiPill score={r._roi} /></td>
-                          <td style={{ padding:'10px 14px', whiteSpace:'nowrap' }}><ConflictPill conflicts={conflicts} /></td>
+                          <td style={{ padding:'10px 14px', whiteSpace:'nowrap' }}>
+                            {isDeclined ? <span className="text-slate-600 text-xs">—</span> : <ConflictPill conflicts={conflicts} />}
+                          </td>
                           <td style={{ padding:'10px 14px', color:'#4b5563', whiteSpace:'nowrap', fontSize:12 }}>{fmtDate(r.created_at)}</td>
                           <td style={{ padding:'8px 12px', whiteSpace:'nowrap' }}>
                             <div className="flex items-center gap-1.5">
+                              {/* Quick Action: Accept / Decline toggle */}
+                              {isDeclined ? (
+                                <button
+                                  onClick={() => handleToggleStatus(r)}
+                                  title="Accept / Activate player (restores slot)"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-sans text-xs font-bold tracking-tight transition-all active:scale-95 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300">
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>Accept</span>
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleToggleStatus(r)}
+                                  title="Decline player (frees slot in heatmap)"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-sans text-xs font-semibold tracking-tight transition-all active:scale-95 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 text-rose-400">
+                                  <X className="w-3.5 h-3.5" />
+                                  <span>Decline</span>
+                                </button>
+                              )}
+
+                              {/* Edit */}
                               <button onClick={() => setEditRow(r)} title="Edit"
                                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-sans text-xs font-semibold tracking-tight transition-all active:scale-95"
                                 style={{ background:'rgba(76,110,245,0.1)', border:'1px solid rgba(76,110,245,0.25)', color:'#748ffc' }}
@@ -1922,6 +2053,8 @@ export default function Admin() {
                                 onMouseOut={e =>{e.currentTarget.style.background='rgba(76,110,245,0.1)';e.currentTarget.style.borderColor='rgba(76,110,245,0.25)'}}>
                                 <Pencil className="w-3 h-3" /><span className="hidden sm:inline">Edit</span>
                               </button>
+
+                              {/* Delete */}
                               <button onClick={() => setDelTarget(r)} title="Delete"
                                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-sans text-xs font-semibold tracking-tight transition-all active:scale-95"
                                 style={{ background:'rgba(244,63,94,0.08)', border:'1px solid rgba(244,63,94,0.2)', color:'#f43f5e' }}
