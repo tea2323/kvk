@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>2323 KvK — Redirecting...</title>
+    <script type="text/javascript">
+      // Single Page App redirect for GitHub Pages
+      // Converts direct path (e.g., /kvk/admin) to hash route (/kvk/#/admin)
+      var pathSegmentsToKeep = 1; // 1 segment for repository name: '/kvk/'
+      var l = window.location;
+      var repoPath = l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/');
+      var remainingPath = l.pathname.slice(repoPath.length);
+      if (remainingPath.startsWith('/')) {
+        remainingPath = remainingPath.slice(1);
+      }
+      var newUrl = repoPath + '/#/' + remainingPath + (l.search ? l.search : '') + l.hash;
+      window.location.replace(newUrl);
+    </script>
+  </head>
+  <body style="background:#0a0b0f; color:#9ca3af; font-family:sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
+    <p>Redirecting to 2323 KvK...</p>
+  </body>
+</html>
