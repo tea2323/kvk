@@ -33,11 +33,15 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     true_gold_count    INTEGER     DEFAULT 0,
     time_slot_day1     TEXT,
     time_slot_day4     TEXT,
-    status             TEXT        DEFAULT 'approved'
+    status             TEXT        DEFAULT 'approved',
+    status_day1        TEXT        DEFAULT 'approved',
+    status_day4        TEXT        DEFAULT 'approved'
   );
 
   -- Migration for existing databases:
   -- ALTER TABLE kvk_appointments ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'approved';
+  -- ALTER TABLE kvk_appointments ADD COLUMN IF NOT EXISTS status_day1 TEXT DEFAULT 'approved';
+  -- ALTER TABLE kvk_appointments ADD COLUMN IF NOT EXISTS status_day4 TEXT DEFAULT 'approved';
 
   ALTER TABLE kvk_appointments ENABLE ROW LEVEL SECURITY;
 

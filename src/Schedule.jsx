@@ -82,6 +82,42 @@ function StatCard({ icon, label, value, sub, accent }) {
 }
 
 // ─── Public Read-Only Schedule Page ───────────────────────────────────────────
+const enrichScheduleRow = (r) => {
+  let localOverrides = {}
+  try {
+    localOverrides = typeof window !== 'undefined'
+      ? JSON.parse(localStorage.getItem('kvk_status_overrides') || '{}')
+      : {}
+  } catch {}
+
+  const d1Key = `${r.id}_day1`
+  const d4Key = `${r.id}_day4`
+  const legacyDeclined = r.status === 'declined' || localOverrides[r.id] === 'declined'
+
+  const status_day1 = r.status_day1
+    ?? localOverrides[d1Key]
+    ?? (typeof localOverrides[r.id] === 'object' ? localOverrides[r.id]?.day1 : undefined)
+    ?? (legacyDeclined ? 'declined' : 'approved')
+
+  const status_day4 = r.status_day4
+    ?? localOverrides[d4Key]
+    ?? (typeof localOverrides[r.id] === 'object' ? localOverrides[r.id]?.day4 : undefined)
+    ?? (legacyDeclined ? 'declined' : 'approved')
+
+  const hasD1 = (r.selected_days || []).includes('day1') && status_day1 !== 'declined'
+  const hasD4 = (r.selected_days || []).includes('day4') && status_day4 !== 'declined'
+  const isFullyDeclined = !hasD1 && !hasD4
+
+  return {
+    ...r,
+    status_day1,
+    status_day4,
+    hasD1,
+    hasD4,
+    isFullyDeclined,
+  }
+}
+
 export default function PublicSchedule() {
   const navigate = useNavigate()
 
@@ -105,7 +141,7 @@ export default function PublicSchedule() {
     setLoading(true)
     const { data, error } = await supabase
       .from('kvk_appointments')
-      .select('id, player_name, alliance, tc_level, selected_days, time_slot_day1, time_slot_day4, created_at, status')
+      .select('id, player_name, alliance, tc_level, selected_days, time_slot_day1, time_slot_day4, created_at, status, status_day1, status_day4')
       .order('player_name', { ascending: true })
 
     if (error) {
@@ -118,32 +154,13 @@ export default function PublicSchedule() {
       if (fallbackRes.error) {
         console.error('[Public Schedule Fetch Error]', fallbackRes.error)
       } else {
-        const activeRows = (fallbackRes.data ?? []).filter(r => {
-          let localStatus = null
-          try {
-            localStatus = typeof window !== 'undefined'
-              ? (JSON.parse(localStorage.getItem('kvk_status_overrides') || '{}'))[r.id]
-              : null
-          } catch {}
-          const status = r.status || localStatus || 'approved'
-          return status !== 'declined'
-        })
-        setRows(activeRows)
+        const enriched = (fallbackRes.data ?? []).map(enrichScheduleRow).filter(r => !r.isFullyDeclined)
+        setRows(enriched)
         setLastUpdated(new Date())
       }
     } else {
-      // Exclude declined appointments
-      const activeRows = (data ?? []).filter(r => {
-        let localStatus = null
-        try {
-          localStatus = typeof window !== 'undefined'
-            ? (JSON.parse(localStorage.getItem('kvk_status_overrides') || '{}'))[r.id]
-            : null
-        } catch {}
-        const status = r.status || localStatus || 'approved'
-        return status !== 'declined'
-      })
-      setRows(activeRows)
+      const enriched = (data ?? []).map(enrichScheduleRow).filter(r => !r.isFullyDeclined)
+      setRows(enriched)
       setLastUpdated(new Date())
     }
     setLoading(false)
@@ -198,9 +215,11 @@ export default function PublicSchedule() {
   // ── Slot Data for Visualizer ───────────────────────────────────────────────
   const slotData = useMemo(() => {
     const slotField = activeDay === 'day1' ? 'time_slot_day1' : 'time_slot_day4'
+    const activeCheck = activeDay === 'day1' ? 'hasD1' : 'hasD4'
+
     return TIME_SLOTS.map(slot => {
       const signups = rows.filter(r =>
-        r.selected_days?.includes(activeDay) && r[slotField] === slot.value
+        r[activeCheck] && r[slotField] === slot.value
       )
 
       const count = signups.length
@@ -225,7 +244,7 @@ export default function PublicSchedule() {
   const d1UnclaimedCount = useMemo(() => {
     const claimed = new Set()
     rows.forEach(r => {
-      if (r.selected_days?.includes('day1') && r.time_slot_day1) claimed.add(r.time_slot_day1)
+      if (r.hasD1 && r.time_slot_day1) claimed.add(r.time_slot_day1)
     })
     return 48 - claimed.size
   }, [rows])
@@ -233,7 +252,7 @@ export default function PublicSchedule() {
   const d4UnclaimedCount = useMemo(() => {
     const claimed = new Set()
     rows.forEach(r => {
-      if (r.selected_days?.includes('day4') && r.time_slot_day4) claimed.add(r.time_slot_day4)
+      if (r.hasD4 && r.time_slot_day4) claimed.add(r.time_slot_day4)
     })
     return 48 - claimed.size
   }, [rows])
@@ -244,12 +263,13 @@ export default function PublicSchedule() {
 
     if (allianceFilter !== 'ALL') res = res.filter(r => r.alliance === allianceFilter)
 
-    if (tableDayFilter === 'day1') res = res.filter(r => r.selected_days?.includes('day1'))
-    if (tableDayFilter === 'day4') res = res.filter(r => r.selected_days?.includes('day4'))
+    if (tableDayFilter === 'day1') res = res.filter(r => r.hasD1)
+    if (tableDayFilter === 'day4') res = res.filter(r => r.hasD4)
 
     if (selectedSlotFilter) {
       const slotField = activeDay === 'day1' ? 'time_slot_day1' : 'time_slot_day4'
-      res = res.filter(r => r.selected_days?.includes(activeDay) && r[slotField] === selectedSlotFilter)
+      const activeCheck = activeDay === 'day1' ? 'hasD1' : 'hasD4'
+      res = res.filter(r => r[activeCheck] && r[slotField] === selectedSlotFilter)
     }
 
     if (search.trim()) {
@@ -687,12 +707,12 @@ export default function PublicSchedule() {
                         <td style={{ padding:'12px 14px', whiteSpace:'nowrap' }}><AllianceBadge alliance={r.alliance} /></td>
                         <td style={{ padding:'12px 14px', whiteSpace:'nowrap' }}><TcBadge level={r.tc_level} /></td>
                         <td className="font-sans text-xs tracking-tight"
-                          style={{ padding:'12px 14px', whiteSpace:'nowrap', color: r.time_slot_day1 ? '#748ffc' : '#4b5563', fontWeight: r.time_slot_day1 ? 600 : 400 }}>
-                          {fmtSlot(r.time_slot_day1)}
+                          style={{ padding:'12px 14px', whiteSpace:'nowrap', color: r.hasD1 && r.time_slot_day1 ? '#748ffc' : '#4b5563', fontWeight: r.hasD1 && r.time_slot_day1 ? 600 : 400 }}>
+                          {r.hasD1 ? fmtSlot(r.time_slot_day1) : '—'}
                         </td>
                         <td className="font-sans text-xs tracking-tight"
-                          style={{ padding:'12px 14px', whiteSpace:'nowrap', color: r.time_slot_day4 ? '#fcd34d' : '#4b5563', fontWeight: r.time_slot_day4 ? 600 : 400 }}>
-                          {fmtSlot(r.time_slot_day4)}
+                          style={{ padding:'12px 14px', whiteSpace:'nowrap', color: r.hasD4 && r.time_slot_day4 ? '#fcd34d' : '#4b5563', fontWeight: r.hasD4 && r.time_slot_day4 ? 600 : 400 }}>
+                          {r.hasD4 ? fmtSlot(r.time_slot_day4) : '—'}
                         </td>
                       </tr>
                     ))}
